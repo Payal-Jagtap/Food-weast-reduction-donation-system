@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Register - FoodShare{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-7">
+        <div class="card shadow">
+            <div class="card-body p-5">
+                <h2 class="text-center mb-4">Join FoodShare</h2>
+                <p class="text-center text-muted mb-4">Choose your role to get started</p>
+                
+                <form method="POST" action="{{ url_for('register') }}">
+                    <!-- Role Selection: hide the two boxes if a role query param is present -->
+                    {% if not request.args.get('role') %}
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check card-role" data-role="donor">
+                                <div class="card h-100 border-success text-center">
+                                    <div class="card-body">
+                                        <i class="bi bi-building display-6 text-success mb-3"></i>
+                                        <h5 class="card-title">Food Donor</h5>
+                                        <p class="card-text small">Hotels, Restaurants, Caterers, Event Planners</p>
+                                        <input class="form-check-input" type="radio" name="role" value="donor" required 
+                                               {% if request.args.get('role') == 'donor' %}checked{% endif %}>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check card-role" data-role="ngo">
+                                <div class="card h-100 border-warning text-center">
+                                    <div class="card-body">
+                                        <i class="bi bi-people display-6 text-warning mb-3"></i>
+                                        <h5 class="card-title">NGO / Organization</h5>
+                                        <p class="card-text small">Charities, Shelters, Food Banks, Volunteers</p>
+                                        <input class="form-check-input" type="radio" name="role" value="ngo" required
+                                               {% if request.args.get('role') == 'ngo' %}checked{% endif %}>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                        <input type="hidden" name="role" value="{{ request.args.get('role') }}">
+                    {% endif %}
+                    
+                    <!-- Organization Info (dynamic) -->
+                    <div id="organizationField" class="mb-3" style="display: {% if request.args.get('role') == 'ngo' %}block{% else %}none{% endif %};">
+                        <label for="organization" class="form-label">Organization Name</label>
+                        <input type="text" class="form-control" id="organization" name="organization" {% if request.args.get('role') == 'ngo' %}required{% endif %}>
+                    </div>
+                    
+                    <!-- Basic Info -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="username" class="form-label">Username *</label>
+                            <input type="text" class="form-control" id="username" name="username" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="email" class="form-label">Email Address *</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">Phone Number</label>
+                        <input type="tel" class="form-control" id="phone" name="phone">
+                    </div>
+                    
+                    <!-- Passwords -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="password" class="form-label">Password *</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="confirm_password" class="form-label">Confirm Password *</label>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="terms" required>
+                            <label class="form-check-label" for="terms">
+                                I agree to the <a href="{{ url_for('terms') }}">Terms of Service</a> and <a href="{{ url_for('privacy') }}">Privacy Policy</a>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">Create Account</button>
+                    </div>
+                </form>
+                
+                <hr class="my-4">
+                
+                <p class="text-center mb-0">
+                    Already have an account? 
+                    {% if request.args.get('role') %}
+                        <a href="{{ url_for('login') }}?role={{ request.args.get('role') }}" class="text-success">Login here</a>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="text-success">Login here</a>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Show organization field for NGOs (only attach handlers if role cards are present)
+    const cardRoles = document.querySelectorAll('.card-role');
+    if (cardRoles.length) {
+        cardRoles.forEach(card => {
+            card.addEventListener('click', function() {
+                const role = this.dataset.role;
+                const orgField = document.getElementById('organizationField');
+                
+                if (role === 'ngo') {
+                    orgField.style.display = 'block';
+                    document.getElementById('organization').required = true;
+                } else {
+                    orgField.style.display = 'none';
+                    document.getElementById('organization').required = false;
+                }
+                
+                // Update radio button
+                const radio = this.querySelector('input[type="radio"]');
+                if (radio) radio.checked = true;
+            });
+        });
+    }
+    
+    // Initialize based on URL parameter (guard for missing elements)
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlRole = new URLSearchParams(window.location.search).get('role');
+        if (urlRole) {
+            const orgField = document.getElementById('organizationField');
+            if (orgField) {
+                if (urlRole === 'ngo') {
+                    orgField.style.display = 'block';
+                    const orgInput = document.getElementById('organization');
+                    if (orgInput) orgInput.required = true;
+                } else {
+                    orgField.style.display = 'none';
+                    const orgInput = document.getElementById('organization');
+                    if (orgInput) orgInput.required = false;
+                }
+            }
+
+            // If role cards exist, try to select the matching card
+            const targetCard = document.querySelector('.card-role[data-role="' + urlRole + '"]');
+            if (targetCard) targetCard.click();
+        }
+    });
+</script>
+
+<style>
+.card-role {
+    cursor: pointer;
+}
+
+.card-role .card {
+    transition: all 0.3s;
+}
+
+.card-role input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+}
+
+.card-role input[type="radio"]:checked + .card {
+    border-width: 3px;
+    box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.25);
+}
+
+.card-role:hover .card {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}

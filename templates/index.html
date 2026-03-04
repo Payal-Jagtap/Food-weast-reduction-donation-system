@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Enhanced Hero Section -->
+<div class="hero-section text-center py-5 mb-5" style="background: linear-gradient(rgba(40, 167, 69, 0.35), rgba(32, 201, 151, 0.35)), url('{{ url_for('static', filename='uploads/food share image.jpeg') }}'); background-size: cover; background-position: center; border-radius: 15px; overflow: hidden; min-height: 500px; display: flex; align-items: center; justify-content: center;">
+    <div class="py-5 px-4" style="z-index: 10;">
+        <div style="animation: slideDown 0.8s ease-out;">
+            <h2 class="h3 text-white mb-2 fw-semibold" style="text-shadow: 2px 2px 8px rgba(0,0,0,0.7);">Share Food Share Hope</h2>
+            <h1 class="display-3 text-white mb-3 fw-bold" style="text-shadow: 3px 3px 12px rgba(0,0,0,0.8);">Reduce Food Waste, Feed People</h1>
+            <p class="lead text-white mb-4" style="font-size: 1.3rem; text-shadow: 2px 2px 8px rgba(0,0,0,0.8);">
+                Connect surplus food from hotels, restaurants, and events with NGOs and people in need
+            </p>
+            <div class="d-flex gap-3 justify-content-center flex-wrap">
+                {% if not current_user.is_authenticated %}
+                    <a href="{{ url_for('register') }}?role=donor" class="btn btn-light btn-lg px-4 py-3 fw-bold">
+                        <i class="bi bi-building"></i> Become a Donor
+                    </a>
+                    <a href="{{ url_for('register') }}?role=ngo" class="btn btn-warning btn-lg px-4 py-3 fw-bold">
+                        <i class="bi bi-people"></i> Join as NGO
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-light btn-lg px-4 py-3 fw-bold">
+                        <i class="bi bi-speedometer2"></i> Go to Dashboard
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Impact Cards Section removed -->
+
+<!-- Enhanced How It Works Section -->
+<div class="container my-5">
+    <h2 class="text-center mb-5 fw-bold" style="color: #28a745; font-size: 2.5rem;">How It Works</h2>
+    <div class="row g-4 text-center">
+        <!-- Step 1 -->
+        <div class="col-md-6 col-lg-3">
+            <div style="position: relative;">
+                <div class="mb-4">
+                    <div class="step-number mx-auto mb-3" style="width: 80px; height: 80px; background: linear-gradient(135deg, #28a745, #20c997); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);">
+                        <span class="text-white h2 fw-bold">1</span>
+                    </div>
+                </div>
+                <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                    <i class="bi bi-file-earmark-plus" style="font-size: 2rem; color: #28a745; display: block; margin-bottom: 10px;"></i>
+                    <h4 class="fw-bold mb-2">List Food</h4>
+                    <p class="text-muted">Donors post surplus food with details and pickup time</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Step 2 -->
+        <div class="col-md-6 col-lg-3">
+            <div style="position: relative;">
+                <div class="mb-4">
+                    <div class="step-number mx-auto mb-3" style="width: 80px; height: 80px; background: linear-gradient(135deg, #ffc107, #ff9800); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 5px 15px rgba(255, 193, 7, 0.3);">
+                        <span class="text-white h2 fw-bold">2</span>
+                    </div>
+                </div>
+                <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                    <i class="bi bi-bell" style="font-size: 2rem; color: #ffc107; display: block; margin-bottom: 10px;"></i>
+                    <h4 class="fw-bold mb-2">Get Alert</h4>
+                    <p class="text-muted">NGOs receive instant notifications for nearby food</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Step 3 -->
+        <div class="col-md-6 col-lg-3">
+            <div style="position: relative;">
+                <div class="mb-4">
+                    <div class="step-number mx-auto mb-3" style="width: 80px; height: 80px; background: linear-gradient(135deg, #17a2b8, #138496); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 5px 15px rgba(23, 162, 184, 0.3);">
+                        <span class="text-white h2 fw-bold">3</span>
+                    </div>
+                </div>
+                <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                    <i class="bi bi-hand-thumbs-up" style="font-size: 2rem; color: #17a2b8; display: block; margin-bottom: 10px;"></i>
+                    <h4 class="fw-bold mb-2">Claim & Collect</h4>
+                    <p class="text-muted">NGOs claim food and arrange pickup</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Step 4 -->
+        <div class="col-md-6 col-lg-3">
+            <div style="position: relative;">
+                <div class="mb-4">
+                    <div class="step-number mx-auto mb-3" style="width: 80px; height: 80px; background: linear-gradient(135deg, #28a745, #20c997); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);">
+                        <span class="text-white h2 fw-bold">4</span>
+                    </div>
+                </div>
+                <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                    <i class="bi bi-heart" style="font-size: 2rem; color: #28a745; display: block; margin-bottom: 10px;"></i>
+                    <h4 class="fw-bold mb-2">Distribute</h4>
+                    <p class="text-muted">Food reaches people in need within hours</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 40px rgba(0,0,0,0.15) !important;
+    }
+    
+    .btn:hover {
+        transform: scale(1.05);
+        transition: all 0.3s ease;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}Create Food Listing - FoodShare{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <h2 class="mb-4">{% if copy %}Repost: {{ copy.title }}{% else %}Create Food Listing{% endif %}</h2>
+                <p class="text-muted mb-4">List your surplus food to be claimed by NGOs and volunteers.</p>
+                
+                <form method="POST" action="{{ url_for('create_listing') }}" enctype="multipart/form-data">
+                    <!-- Basic Information -->
+                    <div class="mb-4">
+                        <h5 class="mb-3">Basic Information</h5>
+                        
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Food Item / Meal Name *</label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   placeholder="e.g., Buffet Meals, Sandwiches, Packaged Food"
+                                   value="{{ copy.title if copy else '' }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" 
+                                      rows="3" placeholder="Describe the food items...">{{ copy.description if copy else '' }}</textarea>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="food_type" class="form-label">Food Type *</label>
+                                <select class="form-select" id="food_type" name="food_type" required>
+                                    <option value="">Select type...</option>
+                                    <option value="cooked" {% if copy and copy.food_type == 'cooked' %}selected{% endif %}>Cooked Food</option>
+                                    <option value="packaged" {% if copy and copy.food_type == 'packaged' %}selected{% endif %}>Packaged Food</option>
+                                    <option value="raw" {% if copy and copy.food_type == 'raw' %}selected{% endif %}>Raw Ingredients</option>
+                                    <option value="baked" {% if copy and copy.food_type == 'baked' %}selected{% endif %}>Baked Goods</option>
+                                    <option value="fresh" {% if copy and copy.food_type == 'fresh' %}selected{% endif %}>Fresh Produce</option>
+                                    <option value="frozen" {% if copy and copy.food_type == 'frozen' %}selected{% endif %}>Frozen Food</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="quantity" class="form-label">Quantity (Number of meals) *</label>
+                                <input type="number" class="form-control" id="quantity" name="quantity" 
+                                       min="1" max="10000" value="{{ copy.quantity if copy else '' }}" required>
+                            </div>
+                        </div>
+                        
+                        <!-- Image Upload -->
+                        <div class="mb-3">
+                            <label for="image" class="form-label">Food Image (Optional)</label>
+                            <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                            {% if copy and copy.image %}
+                            <small class="text-muted">Current image: {{ copy.image }} (will be replaced if you upload a new one)</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Location & Pickup -->
+                    <div class="mb-4">
+                        <h5 class="mb-3">Location & Pickup</h5>
+                        
+                        <div class="mb-3">
+                            <label for="location" class="form-label">Location Name *</label>
+                            <input type="text" class="form-control" id="location" name="location" 
+                                   placeholder="e.g., Grand Hotel, Main Kitchen"
+                                   value="{{ copy.location if copy else '' }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="pickup_address" class="form-label">Pickup Address *</label>
+                            <div class="input-group">
+                                <textarea class="form-control" id="pickup_address" name="pickup_address" 
+                                          rows="2" placeholder="Full address for pickup..." required>{{ copy.pickup_address if copy else '' }}</textarea>
+                                <button type="button" class="btn btn-outline-secondary" onclick="getCurrentLocation()">
+                                    <i class="bi bi-geo-alt"></i> GPS
+                                </button>
+                            </div>
+                            <small class="text-muted">Click GPS to auto-detect your current location</small>
+                        </div>
+                        
+                        <!-- Hidden fields for coordinates -->
+                        <input type="hidden" id="latitude" name="latitude">
+                        <input type="hidden" id="longitude" name="longitude">
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="pickup_start" class="form-label">Pickup Start Time *</label>
+                                <input type="datetime-local" class="form-control" id="pickup_start" 
+                                       name="pickup_start" value="{{ default_start }}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="pickup_end" class="form-label">Pickup End Time *</label>
+                                <input type="datetime-local" class="form-control" id="pickup_end" 
+                                       name="pickup_end" value="{{ default_end }}" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Food Safety -->
+                    <div class="mb-4">
+                        <h5 class="mb-3">Food Safety Information</h5>
+                        
+                        <div class="mb-3">
+                            <label for="allergens" class="form-label">Allergens / Special Notes</label>
+                            <textarea class="form-control" id="allergens" name="allergens" 
+                                      rows="2" placeholder="e.g., Contains nuts, gluten-free, etc.">{{ copy.allergens if copy else '' }}</textarea>
+                            <div class="form-text">Please list any allergens or special handling instructions.</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Submit -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('donor_dashboard') }}" class="btn btn-outline-secondary me-2">Cancel</a>
+                        <button type="submit" class="btn btn-success">{% if copy %}Repost Listing{% else %}Create Listing{% endif %}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Food Safety Guidelines -->
+        <div class="card mt-4 border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Food Safety Guidelines</h5>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>Only donate food that is safe to eat and within its shelf life</li>
+                    <li>Keep hot food hot (above 60°C) and cold food cold (below 5°C)</li>
+                    <li>Pack food securely to prevent contamination during transport</li>
+                    <li>Label food with preparation time and any allergens</li>
+                    <li>Follow local health department guidelines</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // GPS Location Function
+    function getCurrentLocation() {
+        if (navigator.geolocation) {
+            const button = event.target;
+            button.disabled = true;
+            button.innerHTML = '<i class="bi bi-geo-alt"></i> Getting location...';
+            
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    
+                    // Set hidden fields
+                    document.getElementById('latitude').value = lat;
+                    document.getElementById('longitude').value = lon;
+                    
+                    // Reverse geocode to get address (using Nominatim)
+                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data && data.display_name) {
+                                document.getElementById('pickup_address').value = data.display_name;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error getting address:', error);
+                            // Fallback: show coordinates
+                            document.getElementById('pickup_address').value = `Lat: ${lat}, Lon: ${lon}`;
+                        })
+                        .finally(() => {
+                            button.disabled = false;
+                            button.innerHTML = '<i class="bi bi-geo-alt"></i> GPS';
+                        });
+                },
+                function(error) {
+                    console.error('Error getting location:', error);
+                    alert('Unable to get your location. Please enter address manually.');
+                    button.disabled = false;
+                    button.innerHTML = '<i class="bi bi-geo-alt"></i> GPS';
+                }
+            );
+        } else {
+            alert('Geolocation is not supported by your browser.');
+        }
+    }
+    
+    // Set minimum pickup times
+    document.addEventListener('DOMContentLoaded', function() {
+        const now = new Date();
+        const minStart = now.toISOString().slice(0, 16);
+        
+        document.getElementById('pickup_start').min = minStart;
+        document.getElementById('pickup_end').min = minStart;
+        
+        // Auto-adjust end time when start time changes
+        document.getElementById('pickup_start').addEventListener('change', function() {
+            const startTime = new Date(this.value);
+            const endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000); // 2 hours later
+            document.getElementById('pickup_end').value = endTime.toISOString().slice(0, 16);
+        });
+    });
+</script>
+{% endblock %}

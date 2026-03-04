@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block title %}My Listings - FoodShare{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1 class="h2">My Food Listings</h1>
+        <p class="text-muted">Manage your food listings and track their status.</p>
+    </div>
+</div>
+
+<!-- Filter and Search -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <input type="text" class="form-control" placeholder="Search listings..." id="searchInput">
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="statusFilter">
+                            <option value="">All Status</option>
+                            <option value="available">Available</option>
+                            <option value="claimed">Claimed</option>
+                            <option value="picked_up">Picked Up</option>
+                            <option value="expired">Expired</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-outline-success w-100" onclick="resetFilters()">
+                            <i class="bi bi-arrow-clockwise"></i> Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Listings Table -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="listingsTable">
+                        <thead>
+                            <tr>
+                                <th>Food Item</th>
+                                <th>Type</th>
+                                <th>Quantity</th>
+                                <th>Pickup Time</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for listing in listings %}
+                            <tr class="listing-row" data-status="{{ listing.status }}">
+                                <td>
+                                    <strong>{{ listing.title }}</strong>
+                                    {% if listing.description %}
+                                    <br>
+                                    <small class="text-muted">{{ listing.description[:50] }}{% if listing.description|length > 50 %}...{% endif %}</small>
+                                    {% endif %}
+                                </td>
+                                <td>{{ listing.food_type|title if listing.food_type else 'N/A' }}</td>
+                                <td>
+                                    <span class="badge bg-info">{{ listing.quantity }} meals</span>
+                                </td>
+                                <td>
+                                    <small>
+                                        <i class="bi bi-clock"></i> {{ listing.pickup_start.strftime('%I:%M %p') }}<br>
+                                        <i class="bi bi-calendar"></i> {{ listing.pickup_start.strftime('%b %d') }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 
+                                        'success' if listing.status == 'available' 
+                                        else 'warning' if listing.status == 'claimed' 
+                                        else 'info' if listing.status == 'picked_up'
+                                        else 'secondary' if listing.status == 'expired'
+                                        else 'danger'
+                                    }}">
+                                        {{ listing.status|title }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <small>{{ listing.created_at.strftime('%Y-%m-%d') }}</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" 
+                                                data-bs-target="#viewModal{{ listing.id }}">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        {% if listing.status == 'available' %}
+                                        <a href="{{ url_for('create_listing', copy_from=listing.id) }}" class="btn btn-outline-info">
+                                            <i class="bi bi-files"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" 
+                                                data-bs-target="#editModal{{ listing.id }}">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <form method="POST" action="{{ url_for('delete_listing', listing_id=listing.id) }}" 
+                                              class="d-inline" id="deleteForm{{ listing.id }}">
+                                            <button type="submit" class="btn btn-outline-danger" 
+                                                    onclick="return confirmDelete('{{ listing.id }}', '{{ listing.title }}')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                        {% else %}
+                                        <a href="{{ url_for('create_listing', copy_from=listing.id) }}" class="btn btn-outline-info">
+                                            <i class="bi bi-files"></i> Repost
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- View Modal -->
+                            <div class="modal fade" id="viewModal{{ listing.id }}" tabindex="-1">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">{{ listing.title }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <h6>Details</h6>
+                                                    <p><strong>Type:</strong> {{ listing.food_type|title }}</p>
+                                                    <p><strong>Quantity:</strong> {{ listing.quantity }} meals</p>
+                                                    <p><strong>Allergens:</strong> {{ listing.allergens or 'None specified' }}</p>
+                                                    {% if listing.image %}
+                                                    <img src="{{ url_for('static', filename='uploads/' + listing.image) }}" class="img-fluid mt-2" style="max-height: 200px;">
+                                                    {% endif %}
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <h6>Pickup Information</h6>
+                                                    <p><strong>Location:</strong> {{ listing.location }}</p>
+                                                    <p><strong>Address:</strong> {{ listing.pickup_address or listing.location }}</p>
+                                                    <p><strong>Pickup Window:</strong><br>
+                                                        {{ listing.pickup_start.strftime('%B %d, %Y %I:%M %p') }}<br>
+                                                        to<br>
+                                                        {{ listing.pickup_end.strftime('%B %d, %Y %I:%M %p') }}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            {% if listing.description %}
+                                            <hr>
+                                            <h6>Description</h6>
+                                            <p>{{ listing.description }}</p>
+                                            {% endif %}
+                                            
+                                            {% if listing.claims %}
+                                            <hr>
+                                            <h6>Claim Information</h6>
+                                            {% for claim in listing.claims %}
+                                            <div class="alert alert-info">
+                                                <strong>Claimed by:</strong> {{ claim.receiver.organization or claim.receiver.username }}<br>
+                                                <strong>Status:</strong> {{ claim.status|title }}<br>
+                                                <strong>Claimed on:</strong> {{ claim.created_at.strftime('%B %d, %I:%M %p') }}<br>
+                                                {% if claim.notes %}
+                                                <strong>Notes:</strong> {{ claim.notes }}
+                                                {% endif %}
+                                            </div>
+                                            {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                            {% if listing.status == 'available' %}
+                                            <button type="button" class="btn btn-warning" data-bs-dismiss="modal" 
+                                                    data-bs-toggle="modal" data-bs-target="#editModal{{ listing.id }}">
+                                                Edit
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Edit Modal -->
+                            {% if listing.status == 'available' %}
+                            <div class="modal fade" id="editModal{{ listing.id }}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <form method="POST" action="{{ url_for('edit_listing', listing_id=listing.id) }}">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Edit Listing</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Title *</label>
+                                                    <input type="text" class="form-control" name="title" value="{{ listing.title }}" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Quantity *</label>
+                                                    <input type="number" class="form-control" name="quantity" value="{{ listing.quantity }}" min="1" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Pickup End Time *</label>
+                                                    <input type="datetime-local" class="form-control" name="pickup_end" 
+                                                           value="{{ listing.pickup_end.strftime('%Y-%m-%dT%H:%M') }}" required>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-warning">Save Changes</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if not listings %}
+                <div class="text-center py-5">
+                    <i class="bi bi-emoji-frown display-4 text-muted mb-3"></i>
+                    <h5>No Listings Found</h5>
+                    <p class="text-muted mb-4">You haven't created any food listings yet.</p>
+                    <a href="{{ url_for('create_listing') }}" class="btn btn-success">
+                        <i class="bi bi-plus-circle"></i> Create Your First Listing
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Filter and search functionality
+    document.getElementById('searchInput').addEventListener('keyup', filterListings);
+    document.getElementById('statusFilter').addEventListener('change', filterListings);
+
+    function filterListings() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const statusFilter = document.getElementById('statusFilter').value;
+        
+        const rows = document.querySelectorAll('#listingsTable tbody tr.listing-row');
+        
+        rows.forEach(row => {
+            const title = row.querySelector('td:nth-child(1)').textContent.toLowerCase();
+            const status = row.getAttribute('data-status');
+            
+            const matchesSearch = title.includes(searchTerm) || searchTerm === '';
+            const matchesStatus = statusFilter === '' || status === statusFilter;
+            
+            if (matchesSearch && matchesStatus) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    function resetFilters() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('statusFilter').value = '';
+        filterListings();
+    }
+
+    function confirmDelete(listingId, title) {
+        return confirm(`Are you sure you want to delete "${title}"?\nThis action cannot be undone.`);
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,168 @@
+/* Custom CSS for FoodShare */
+
+:root {
+    --primary-green: #28a745;
+    --light-green: #d4edda;
+    --dark-green: #218838;
+    --warning-yellow: #ffc107;
+    --light-yellow: #fff3cd;
+}
+
+/* General Styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+}
+
+/* Card Styling */
+.card {
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.food-card {
+    border-left: 4px solid var(--warning-yellow);
+}
+
+/* Badge Styling */
+.badge {
+    font-weight: 500;
+    padding: 0.4em 0.8em;
+}
+
+/* Button Styling */
+.btn {
+    border-radius: 8px;
+    padding: 0.5rem 1.5rem;
+}
+
+.btn-success {
+    background-color: var(--primary-green);
+    border-color: var(--primary-green);
+}
+
+.btn-success:hover {
+    background-color: var(--dark-green);
+    border-color: var(--dark-green);
+}
+
+.btn-warning {
+    background-color: var(--warning-yellow);
+    border-color: var(--warning-yellow);
+}
+
+/* Navbar */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+}
+
+/* Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, var(--primary-green) 0%, #20c997 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 4rem 2rem;
+}
+
+/* Step Indicators */
+.step-number {
+    width: 60px;
+    height: 60px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+
+/* CTA Section */
+.cta-section {
+    background: linear-gradient(135deg, var(--primary-green) 0%, #20c997 100%);
+    padding: 4rem 2rem;
+    border-radius: 15px;
+}
+
+/* Form Styling */
+.form-control, .form-select {
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    border: 2px solid #dee2e6;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.25);
+}
+
+/* Table Styling */
+.table-hover tbody tr:hover {
+    background-color: rgba(40, 167, 69, 0.05);
+}
+
+/* Alert Styling */
+.alert {
+    border-radius: 8px;
+    border: none;
+}
+
+/* Dashboard Cards */
+.dashboard-card {
+    text-align: center;
+    border: none;
+}
+
+.dashboard-card .card-title {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+/* Food List Cards */
+.food-list-card {
+    border: 1px solid #dee2e6;
+    margin-bottom: 1rem;
+}
+
+.food-list-card .card-body {
+    padding: 1.5rem;
+}
+
+/* Status Badges */
+.badge-available {
+    background-color: var(--light-green);
+    color: var(--dark-green);
+}
+
+.badge-claimed {
+    background-color: var(--light-yellow);
+    color: #856404;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 2rem 1rem;
+    }
+    
+    .cta-section {
+        padding: 2rem 1rem;
+    }
+    
+    .dashboard-card .card-title {
+        font-size: 1.5rem;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .navbar, .footer, .no-print {
+        display: none !important;
+    }
+}
+
+/* Floating back-arrow removed */

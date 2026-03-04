@@ -1,0 +1,465 @@
+{% extends "base.html" %}
+
+{% block title %}Available Food - FoodShare{% endblock %}
+
+{% block extra_css %}
+<style>
+    .food-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        border-left: 4px solid #ffc107;
+    }
+    
+    .food-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    
+    .urgent {
+        border-left: 4px solid #dc3545;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
+        70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+    }
+    
+    .badge-expiring {
+        background-color: #fd7e14;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1 class="h2">Available Food Near You</h1>
+        <p class="text-muted">Browse and claim available food donations from local businesses.</p>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <input type="text" class="form-control" placeholder="Search food items..." id="searchFood">
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="foodTypeFilter">
+                            <option value="">All Food Types</option>
+                            <option value="cooked">Cooked Food</option>
+                            <option value="packaged">Packaged Food</option>
+                            <option value="raw">Raw Ingredients</option>
+                            <option value="baked">Baked Goods</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="sortBy">
+                            <option value="newest">Newest First</option>
+                            <option value="expiring">Expiring Soon</option>
+                            <option value="quantity">Most Quantity</option>
+                            {% if current_user.latitude and current_user.longitude %}
+                            <option value="distance">Nearest First</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-outline-warning w-100" onclick="resetFoodFilters()">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <div class="card bg-light">
+                    <div class="card-body text-center py-3">
+                        <h6 class="mb-0">Total Available</h6>
+                        <h3 class="mb-0">{{ listings|length }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-light">
+                    <div class="card-body text-center py-3">
+                        <h6 class="mb-0">Meals Available</h6>
+                        <h3 class="mb-0">{{ listings|sum(attribute='quantity') }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-light">
+                    <div class="card-body text-center py-3">
+                        <h6 class="mb-0">Expiring Soon</h6>
+                        <h3 class="mb-0" id="expiringCount">0</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-light">
+                    <div class="card-body text-center py-3">
+                        <h6 class="mb-0">Cooked Food</h6>
+                        <h3 class="mb-0">{{ listings|selectattr('food_type', 'equalto', 'cooked')|list|length }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Food Grid -->
+<div class="row" id="foodGrid">
+    {% for listing in listings %}
+    {% set hours_left = ((listing.pickup_end - datetime.utcnow()).total_seconds() / 3600)|round|int %}
+    <div class="col-md-6 col-lg-4 mb-4 food-item" 
+         data-type="{{ listing.food_type }}"
+         data-quantity="{{ listing.quantity }}"
+         data-expiry="{{ hours_left }}"
+         data-title="{{ listing.title|lower }}">
+        <div class="card h-100 food-card {% if hours_left < 2 %}urgent{% endif %}">
+            {% if listing.image %}
+            <img src="{{ url_for('static', filename='uploads/' + listing.image) }}" class="card-img-top" style="height: 180px; object-fit: cover;">
+            {% endif %}
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 class="card-title mb-1">{{ listing.title }}</h5>
+                        <p class="text-muted small mb-0">
+                            <i class="bi bi-building"></i> {{ listing.donor.organization or listing.donor.username }}
+                        </p>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-info">{{ listing.quantity }} meals</span>
+                        {% if hours_left < 4 %}
+                        <span class="badge badge-expiring mt-1">Expiring in {{ hours_left }}h</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <p class="card-text small">
+                        <i class="bi bi-geo-alt"></i> {{ listing.location }}
+                        {% if current_user.latitude and current_user.longitude and listing.latitude and listing.longitude and listing.distance %}
+                        <br><small class="text-primary"><strong>{{ "%.1f"|format(listing.distance) }} km away</strong></small>
+                        {% endif %}
+                        {% if listing.pickup_address %}
+                        <br><small class="text-muted">{{ listing.pickup_address[:50] }}{% if listing.pickup_address|length > 50 %}...{% endif %}</small>
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <div class="border rounded p-2 text-center">
+                            <small class="d-block text-muted">Type</small>
+                            <strong>{{ listing.food_type|title if listing.food_type else 'N/A' }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="border rounded p-2 text-center">
+                            <small class="d-block text-muted">Pickup By</small>
+                            <strong>{{ listing.pickup_end.strftime('%I:%M %p') }}</strong>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if listing.allergens %}
+                <div class="mb-3">
+                    <small class="text-muted">Allergens: {{ listing.allergens }}</small>
+                </div>
+                {% endif %}
+                
+                {% if listing.description %}
+                <div class="mb-3">
+                    <small class="d-block text-muted">Description:</small>
+                    <small>{{ listing.description[:100] }}{% if listing.description|length > 100 %}...{% endif %}</small>
+                </div>
+                {% endif %}
+                
+                <div class="d-grid gap-2">
+                    <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#claimModal{{ listing.id }}">
+                        <i class="bi bi-cart-check"></i> Claim This Food
+                    </button>
+                    <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#detailsModal{{ listing.id }}">
+                        <i class="bi bi-info-circle"></i> View Details
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Claim Modal -->
+    <div class="modal fade" id="claimModal{{ listing.id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Claim Food</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>You are about to claim:</p>
+                    <div class="alert alert-info">
+                        <strong>{{ listing.title }}</strong><br>
+                        {{ listing.quantity }} meals • {{ listing.food_type|title }}<br>
+                        <small>From: {{ listing.donor.organization or listing.donor.username }}</small>
+                    </div>
+                    
+                    <form id="claimForm{{ listing.id }}">
+                        <div class="mb-3">
+                            <label class="form-label">Estimated Number of People to Serve</label>
+                            <input type="number" class="form-control" name="people_served" min="1" max="10000" 
+                                   value="{{ listing.quantity }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notes for Donor (Optional)</label>
+                            <textarea class="form-control" name="notes" rows="3" 
+                                      placeholder="E.g., Pickup time preference, special instructions..."></textarea>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" required>
+                            <label class="form-check-label">
+                                I confirm that we have the capacity to collect and distribute this food safely
+                            </label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form method="POST" action="{{ url_for('claim_food', listing_id=listing.id ) }}">
+                        <button type="submit" class="btn btn-warning">Confirm Claim</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Modal -->
+    <div class="modal fade" id="detailsModal{{ listing.id }}" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ listing.title }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Food Details</h6>
+                            <p><strong>Type:</strong> {{ listing.food_type|title if listing.food_type else 'Not specified' }}</p>
+                            <p><strong>Quantity:</strong> {{ listing.quantity }} meals</p>
+                            <p><strong>Allergens:</strong> {{ listing.allergens or 'None specified' }}</p>
+                            {% if listing.image %}
+                            <img src="{{ url_for('static', filename='uploads/' + listing.image) }}" class="img-fluid mt-2" style="max-height: 150px;">
+                            {% endif %}
+                            
+                            {% if listing.description %}
+                            <hr>
+                            <h6>Description</h6>
+                            <p>{{ listing.description }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Pickup Information</h6>
+                            <p><strong>Donor:</strong> {{ listing.donor.organization or listing.donor.username }}</p>
+                            <p><strong>Location:</strong> {{ listing.location }}</p>
+                            <p><strong>Address:</strong> {{ listing.pickup_address or listing.location }}</p>
+                            
+                            <!-- Map Display -->
+                            {% if listing.latitude and listing.longitude %}
+                            <div class="mb-3">
+                                <h6>Location Map</h6>
+                                <div id="map{{ listing.id }}" style="height: 200px; width: 100%; border-radius: 8px;" 
+                                     data-lat="{{ listing.latitude }}" data-lon="{{ listing.longitude }}"></div>
+                                <small class="text-muted">
+                                    <a href="https://www.google.com/maps/search/?api=1&query={{ listing.latitude }},{{ listing.longitude }}" 
+                                       target="_blank" class="text-decoration-none">
+                                        <i class="bi bi-map"></i> Get Directions
+                                    </a>
+                                </small>
+                            </div>
+                            {% endif %}
+                            <p><strong>Pickup Window:</strong><br>
+                                <i class="bi bi-clock"></i> {{ listing.pickup_start.strftime('%I:%M %p') }} - {{ listing.pickup_end.strftime('%I:%M %p') }}<br>
+                                <i class="bi bi-calendar"></i> {{ listing.pickup_start.strftime('%B %d, %Y') }}
+                            </p>
+                            <hr>
+                            <h6>Contact Information</h6>
+                            <p>
+                                <i class="bi bi-person"></i> {{ listing.donor.username }}<br>
+                                {% if listing.donor.phone %}
+                                <i class="bi bi-telephone"></i> {{ listing.donor.phone }}<br>
+                                {% endif %}
+                                <i class="bi bi-envelope"></i> {{ listing.donor.email }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#claimModal{{ listing.id }}">
+                        <i class="bi bi-cart-check"></i> Claim This Food
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if not listings %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-emoji-smile display-4 text-muted mb-3"></i>
+                <h4>No Food Available at the Moment</h4>
+                <p class="text-muted mb-4">All available food has been claimed or there are no current donations.</p>
+                <div class="alert alert-info">
+                    <i class="bi bi-bell"></i> Enable notifications to get alerts when new food is available!
+                </div>
+                <a href="{{ url_for('ngo_dashboard') }}" class="btn btn-warning">Back to Dashboard</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+    // Calculate expiring count
+    document.addEventListener('DOMContentLoaded', function() {
+        let expiringCount = 0;
+        document.querySelectorAll('.food-item').forEach(item => {
+            const expiry = parseInt(item.getAttribute('data-expiry'));
+            if (expiry < 4) {
+                expiringCount++;
+            }
+        });
+        document.getElementById('expiringCount').textContent = expiringCount;
+    });
+
+    // Filter functionality
+    document.getElementById('searchFood').addEventListener('keyup', filterFood);
+    document.getElementById('foodTypeFilter').addEventListener('change', filterFood);
+    document.getElementById('sortBy').addEventListener('change', sortFood);
+
+    function filterFood() {
+        const searchTerm = document.getElementById('searchFood').value.toLowerCase();
+        const typeFilter = document.getElementById('foodTypeFilter').value;
+        
+        document.querySelectorAll('.food-item').forEach(item => {
+            const title = item.getAttribute('data-title');
+            const type = item.getAttribute('data-type');
+            
+            const matchesSearch = title.includes(searchTerm) || searchTerm === '';
+            const matchesType = typeFilter === '' || type === typeFilter;
+            
+            if (matchesSearch && matchesType) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+    function sortFood() {
+        const sortBy = document.getElementById('sortBy').value;
+        const container = document.getElementById('foodGrid');
+        const items = Array.from(container.querySelectorAll('.food-item'));
+        
+        items.sort((a, b) => {
+            if (sortBy === 'newest') {
+                return 0; // Already sorted by newest in backend
+            } else if (sortBy === 'expiring') {
+                const aExpiry = parseInt(a.getAttribute('data-expiry'));
+                const bExpiry = parseInt(b.getAttribute('data-expiry'));
+                return aExpiry - bExpiry;
+            } else if (sortBy === 'quantity') {
+                const aQty = parseInt(a.getAttribute('data-quantity'));
+                const bQty = parseInt(b.getAttribute('data-quantity'));
+                return bQty - aQty;
+            }
+            return 0;
+        });
+        
+        items.forEach(item => container.appendChild(item));
+    }
+
+    function resetFoodFilters() {
+        document.getElementById('searchFood').value = '';
+        document.getElementById('foodTypeFilter').value = '';
+        document.getElementById('sortBy').value = 'newest';
+        filterFood();
+    }
+
+    // Initialize maps when modals are shown
+    function initializeMap(listingId, lat, lon) {
+        const mapId = 'map' + listingId;
+        const mapElement = document.getElementById(mapId);
+        
+        if (mapElement && !mapElement.hasAttribute('data-map-initialized')) {
+            const map = L.map(mapId).setView([lat, lon], 15);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            L.marker([lat, lon]).addTo(map)
+                .bindPopup('Pickup Location')
+                .openPopup();
+            
+            mapElement.setAttribute('data-map-initialized', 'true');
+        }
+    }
+
+    // Initialize maps when modal is shown
+    document.addEventListener('shown.bs.modal', function (e) {
+        const modal = e.target;
+        const modalId = modal.id;
+        
+        // Extract listing ID from modal ID
+        const listingId = modalId.replace('detailsModal', '');
+        
+        if (listingId) {
+            // Check if map element exists and has coordinates
+            const mapElement = document.getElementById('map' + listingId);
+            if (mapElement) {
+                // Get coordinates from data attributes
+                const lat = parseFloat(mapElement.getAttribute('data-lat'));
+                const lon = parseFloat(mapElement.getAttribute('data-lon'));
+                
+                if (!isNaN(lat) && !isNaN(lon)) {
+                    setTimeout(() => {
+                        initializeMap(parseInt(listingId), lat, lon);
+                    }, 100);
+                }
+            }
+        }
+    });
+
+    // Auto-refresh every 30 seconds
+    setInterval(() => {
+        fetch(window.location.href)
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const newDoc = parser.parseFromString(html, 'text/html');
+                const newGrid = newDoc.getElementById('foodGrid');
+                if (newGrid) {
+                    document.getElementById('foodGrid').innerHTML = newGrid.innerHTML;
+                }
+            });
+    }, 30000);
+</script>
+{% endblock %}

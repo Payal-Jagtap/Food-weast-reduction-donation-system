@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Listing - FoodShare{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <h2 class="mb-4">Edit Food Listing</h2>
+                
+                <form method="POST" action="{{ url_for('edit_listing', listing_id=listing.id) }}">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Food Item / Meal Name *</label>
+                        <input type="text" class="form-control" id="title" name="title" 
+                               value="{{ listing.title }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="quantity" class="form-label">Quantity (Number of meals) *</label>
+                        <input type="number" class="form-control" id="quantity" name="quantity" 
+                               value="{{ listing.quantity }}" min="1" max="10000" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="pickup_end" class="form-label">Pickup End Time *</label>
+                        <input type="datetime-local" class="form-control" id="pickup_end" 
+                               name="pickup_end" value="{{ listing.pickup_end.strftime('%Y-%m-%dT%H:%M') }}" required>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('my_listings') }}" class="btn btn-outline-secondary me-2">Cancel</a>
+                        <button type="submit" class="btn btn-warning">Update Listing</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

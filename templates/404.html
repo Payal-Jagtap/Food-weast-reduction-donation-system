@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Page Not Found - FoodShare{% endblock %}
+{% block content %}
+<div class="text-center py-5">
+    <i class="bi bi-exclamation-triangle display-1 text-warning"></i>
+    <h1 class="display-4">404</h1>
+    <p class="lead">Page Not Found</p>
+    <p>The page you are looking for doesn't exist or has been moved.</p>
+    <a href="{{ url_for('index') }}" class="btn btn-success">Go Home</a>
+</div>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Login - FoodShare{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow">
+            <div class="card-body p-5">
+                <h2 class="text-center mb-4">Login to FoodShare</h2>
+
+                {% if not request.args.get('role') %}
+                <p class="text-center text-muted mb-4">Choose your role to continue</p>
+                <div id="roleSelection" class="row mb-4">
+                    <div class="col-md-6 mb-3">
+                        <div class="card-role" data-role="donor">
+                            <div class="card h-100 border-success text-center p-4">
+                                <i class="bi bi-building display-6 text-success mb-3"></i>
+                                <h5 class="card-title text-dark">Donor</h5>
+                                <p class="card-text small text-muted">Hotels, Restaurants, Caterers</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card-role" data-role="ngo">
+                            <div class="card h-100 border-warning text-center p-4">
+                                <i class="bi bi-people display-6 text-warning mb-3"></i>
+                                <h5 class="card-title text-dark">NGO</h5>
+                                <p class="card-text small text-muted">Charities, Food Banks, Volunteers</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div id="loginForm" style="display: {% if request.args.get('role') %}block{% else %}none{% endif %};">
+                <form method="POST" action="{{ url_for('login') }}{% if request.args.get('role') %}?role={{ request.args.get('role') }}{% endif %}">
+                    {% if request.args.get('role') %}
+                        <input type="hidden" name="role" id="hiddenRoleInput" value="{{ request.args.get('role') }}">
+                        <p class="text-center mb-3"><strong>Logging in as {{ request.args.get('role')|capitalize }}</strong></p>
+                    {% else %}
+                        <input type="hidden" name="role" id="hiddenRoleInput" value="">
+                    {% endif %}
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                        <label class="form-check-label" for="remember">Remember me</label>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">Login</button>
+                    </div>
+                </form>
+                </div>
+
+                <hr class="my-4">
+
+                <p class="text-center mb-0">
+                    Don't have an account? 
+                    {% if request.args.get('role') %}
+                        <a href="{{ url_for('register') }}?role={{ request.args.get('role') }}" class="text-success">Register here</a>
+                    {% else %}
+                        <a href="{{ url_for('register') }}" class="text-success">Register here</a>
+                    {% endif %}
+                </p>
+                <p class="text-center mt-2">
+                    <a href="{{ url_for('forgot_password') }}" class="text-muted">Forgot Password?</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+ 
+{% block extra_js %}
+<script>
+    // Toggle login form after choosing a role (only if roleSelection exists)
+    (function(){
+        const roleCards = document.querySelectorAll('.card-role');
+        const loginForm = document.getElementById('loginForm');
+        const hiddenRole = document.getElementById('hiddenRoleInput');
+
+        if (roleCards && roleCards.length) {
+            roleCards.forEach(card => {
+                card.addEventListener('click', function(){
+                    const role = this.dataset.role;
+                    if (hiddenRole) hiddenRole.value = role;
+                    if (loginForm) loginForm.style.display = 'block';
+                    const roleSelection = document.getElementById('roleSelection');
+                    if (roleSelection) roleSelection.style.display = 'none';
+                    const note = document.querySelector('#loginForm p strong');
+                    if (note) note.textContent = 'Logging in as ' + role.charAt(0).toUpperCase() + role.slice(1);
+                    // focus email
+                    const email = document.getElementById('email');
+                    if (email) email.focus();
+                });
+            });
+        }
+
+        // If ?role= is present, ensure form visible and hide selection
+        document.addEventListener('DOMContentLoaded', function(){
+            const urlRole = new URLSearchParams(window.location.search).get('role');
+            const roleSelection = document.getElementById('roleSelection');
+            if (urlRole) {
+                if (hiddenRole) hiddenRole.value = urlRole;
+                if (loginForm) loginForm.style.display = 'block';
+                if (roleSelection) roleSelection.style.display = 'none';
+            }
+        });
+    })();
+</script>
+{% endblock %}

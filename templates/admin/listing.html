@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Manage Listings - FoodShare{% endblock %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1 class="h2">Manage Listings</h1>
+    </div>
+</div>
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Title</th>
+                        <th>Donor</th>
+                        <th>Quantity</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for listing in listings %}
+                    <tr>
+                        <td>{{ listing.id }}</td>
+                        <td>{{ listing.title }}</td>
+                        <td>{{ listing.donor.username }}</td>
+                        <td>{{ listing.quantity }}</td>
+                        <td>
+                            <span class="badge bg-{{ 
+                                'success' if listing.status == 'available' 
+                                else 'warning' if listing.status == 'claimed' 
+                                else 'info' if listing.status == 'picked_up'
+                                else 'secondary'
+                            }}">{{ listing.status }}</span>
+                        </td>
+                        <td>{{ listing.created_at.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            <form method="POST" action="{{ url_for('admin_delete_listing', listing_id=listing.id) }}"
+                                  onsubmit="return confirm('Delete this listing?')" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

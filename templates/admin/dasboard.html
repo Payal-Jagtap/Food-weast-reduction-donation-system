@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard - FoodShare{% endblock %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="alert alert-info" role="alert">
+            <i class="bi bi-shield-lock"></i> 
+            <strong>Admin Panel:</strong> Welcome back, <strong>{{ admin.full_name or admin.username }}</strong>
+        </div>
+        <h1 class="h2"><i class="bi bi-speedometer2"></i> Admin Dashboard</h1>
+    </div>
+</div>
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card border-primary">
+            <div class="card-body text-center">
+                <h5 class="card-title text-primary">{{ total_users }}</h5>
+                <p class="card-text">Total Users</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-success">
+            <div class="card-body text-center">
+                <h5 class="card-title text-success">{{ total_listings }}</h5>
+                <p class="card-text">Total Listings</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-warning">
+            <div class="card-body text-center">
+                <h5 class="card-title text-warning">{{ total_claims }}</h5>
+                <p class="card-text">Total Claims</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-info">
+            <div class="card-body text-center">
+                <h5 class="card-title text-info">{{ pending_ngos }}</h5>
+                <p class="card-text">Pending NGOs</p>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Quick Actions</h5>
+                <ul class="list-group">
+                    <li class="list-group-item"><a href="{{ url_for('admin_users') }}">Manage Users</a></li>
+                    <li class="list-group-item"><a href="{{ url_for('admin_listings') }}">Manage Listings</a></li>
+                    <li class="list-group-item"><a href="{{ url_for('export_data') }}">Export CSV</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Recent Activity</h5>
+                <!-- Chart.js can be added here -->
+                <canvas id="myChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Example chart - replace with real data
+    const ctx = document.getElementById('myChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar'],
+            datasets: [{
+                label: 'Donations',
+                data: [12, 19, 3],
+                backgroundColor: 'rgba(40, 167, 69, 0.5)'
+            }]
+        }
+    });
+</script>
+{% endblock %}
