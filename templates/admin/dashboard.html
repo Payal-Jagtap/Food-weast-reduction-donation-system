@@ -3,92 +3,116 @@
 {% block content %}
 <div class="row mb-4">
     <div class="col-md-12">
-        <div class="alert alert-info" role="alert">
-            <i class="bi bi-shield-lock"></i> 
-            <strong>Admin Panel:</strong> Welcome back, <strong>{{ admin.full_name or admin.username }}</strong>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'success' if category == 'success' else 'info' if category == 'info' else 'warning' if category == 'warning' else 'danger' }} alert-dismissible fade show" role="alert">
+                        <i class="bi bi-{{ 'check-circle' if category == 'success' else 'info-circle' if category == 'info' else 'exclamation-triangle' if category == 'warning' else 'x-circle' }}"></i> 
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h1 class="h2 mb-0"><i class="bi bi-speedometer2"></i> Admin Dashboard</h1>
+                <p class="text-muted mb-0">Welcome back, <strong>{{ admin.full_name or admin.username }}</strong></p>
+            </div>
+            <div>
+                <a href="{{ url_for('admin_logout') }}" class="btn btn-outline-danger">
+                    <i class="bi bi-box-arrow-right"></i> Admin Logout
+                </a>
+            </div>
         </div>
-        <h1 class="h2"><i class="bi bi-speedometer2"></i> Admin Dashboard</h1>
     </div>
 </div>
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card border-primary">
+
+<!-- Statistics Cards -->
+<div class="row mb-5 mt-2">
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card stat-card-blue">
             <div class="card-body text-center">
-                <h5 class="card-title text-primary">{{ total_users }}</h5>
+                <h5 class="card-title">{{ total_users }}</h5>
                 <p class="card-text">Total Users</p>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card border-success">
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card stat-card-green">
             <div class="card-body text-center">
-                <h5 class="card-title text-success">{{ total_listings }}</h5>
+                <h5 class="card-title">{{ total_listings }}</h5>
                 <p class="card-text">Total Listings</p>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card border-warning">
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card stat-card-yellow">
             <div class="card-body text-center">
-                <h5 class="card-title text-warning">{{ total_claims }}</h5>
+                <h5 class="card-title">{{ total_claims }}</h5>
                 <p class="card-text">Total Claims</p>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card border-info">
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card stat-card-teal">
             <div class="card-body text-center">
-                <h5 class="card-title text-info">{{ pending_ngos }}</h5>
+                <h5 class="card-title">{{ pending_ngos }}</h5>
                 <p class="card-text">Pending NGOs</p>
             </div>
         </div>
     </div>
 </div>
-<div class="row">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Quick Actions</h5>
-                <ul class="list-group">
-                    <li class="list-group-item"><a href="{{ url_for('admin_users') }}">Manage Users</a></li>
-                    <li class="list-group-item"><a href="{{ url_for('admin_listings') }}">Manage Listings</a></li>
-                    <li class="list-group-item"><a href="{{ url_for('export_data') }}">Export CSV</a></li>
-                </ul>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Recent Activity</h5>
-                <!-- Chart.js can be added here -->
-                <canvas id="myChart"></canvas>
+
+<!-- Quick Actions and Chart -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card border-0" style="background: #f8f9fa; box-shadow: 0 8px 24px rgba(0,0,0,0.06);">
+            <div class="card-body p-4">
+                <h5 class="card-title mb-4" style="font-size: 1.5rem; font-weight: 800; color: #000;">
+                    <i class="bi bi-lightning-fill me-2" style="color: #28a745;"></i>Quick Actions
+                </h5>
+                <div class="row g-4">
+                    <div class="col-md-6 col-lg-4">
+                        <a href="{{ url_for('admin_users') }}" class="quick-action-box">
+                            <i class="bi bi-people"></i>
+                            <div class="action-text">Manage Users</div>
+                        </a>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <a href="{{ url_for('admin_listings') }}" class="quick-action-box">
+                            <i class="bi bi-box"></i>
+                            <div class="action-text">Manage Listings</div>
+                        </a>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <a href="{{ url_for('admin_claims') }}" class="quick-action-box">
+                            <i class="bi bi-hand-index"></i>
+                            <div class="action-text">Manage Claims</div>
+                        </a>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <a href="{{ url_for('admin_notifications') }}" class="quick-action-box">
+                            <i class="bi bi-bell"></i>
+                            <div class="action-text">Notifications</div>
+                        </a>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <a href="{{ url_for('admin_reports') }}" class="quick-action-box">
+                            <i class="bi bi-graph-up"></i>
+                            <div class="action-text">Reports & Analytics</div>
+                        </a>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <a href="{{ url_for('export_data') }}" class="quick-action-box">
+                            <i class="bi bi-download"></i>
+                            <div class="action-text">Export CSV</div>
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    // Example chart - replace with real data
-    const ctx = document.getElementById('myChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: ['Jan', 'Feb', 'Mar'],
-            datasets: [{
-                label: 'Donations',
-                data: [12, 19, 3],
-                backgroundColor: 'rgba(40, 167, 69, 0.5)'
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                }
-            }
-        }
-    });
-</script>
 {% endblock %}

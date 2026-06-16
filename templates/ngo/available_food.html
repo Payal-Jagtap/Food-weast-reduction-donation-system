@@ -45,18 +45,22 @@
     <div class="col-md-12">
         <div class="card">
             <div class="card-body">
-                <div class="row g-3">
+                <div class="row g-3 align-items-center">
                     <div class="col-md-4">
                         <input type="text" class="form-control" placeholder="Search food items..." id="searchFood">
                     </div>
-                    <div class="col-md-3">
-                        <select class="form-select" id="foodTypeFilter">
-                            <option value="">All Food Types</option>
-                            <option value="cooked">Cooked Food</option>
-                            <option value="packaged">Packaged Food</option>
-                            <option value="raw">Raw Ingredients</option>
-                            <option value="baked">Baked Goods</option>
-                        </select>
+                    <div class="col-md-5">
+                        <div class="btn-group w-100" role="group">
+                            <button type="button" class="btn btn-outline-warning" id="filterAll" onclick="filterByType('')">
+                                <i class="bi bi-grid"></i> All Food
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" id="filterSolid" onclick="filterByType('solid')">
+                                <i class="bi bi-square"></i> Solid
+                            </button>
+                            <button type="button" class="btn btn-outline-info" id="filterLiquid" onclick="filterByType('liquid')">
+                                <i class="bi bi-droplet"></i> Liquid
+                            </button>
+                        </div>
                     </div>
                     <div class="col-md-3">
                         <select class="form-select" id="sortBy">
@@ -102,16 +106,16 @@
             <div class="col-md-3">
                 <div class="card bg-light">
                     <div class="card-body text-center py-3">
-                        <h6 class="mb-0">Expiring Soon</h6>
-                        <h3 class="mb-0" id="expiringCount">0</h3>
+                        <h6 class="mb-0">Solid Food</h6>
+                        <h3 class="mb-0">{{ listings|selectattr('food_type', 'equalto', 'solid')|list|length }}</h3>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="card bg-light">
                     <div class="card-body text-center py-3">
-                        <h6 class="mb-0">Cooked Food</h6>
-                        <h3 class="mb-0">{{ listings|selectattr('food_type', 'equalto', 'cooked')|list|length }}</h3>
+                        <h6 class="mb-0">Liquid Food</h6>
+                        <h3 class="mb-0">{{ listings|selectattr('food_type', 'equalto', 'liquid')|list|length }}</h3>
                     </div>
                 </div>
             </div>
@@ -351,21 +355,41 @@
 
     // Filter functionality
     document.getElementById('searchFood').addEventListener('keyup', filterFood);
-    document.getElementById('foodTypeFilter').addEventListener('change', filterFood);
     document.getElementById('sortBy').addEventListener('change', sortFood);
+
+    // New function for Solid/Liquid filtering
+    function filterByType(type) {
+        // Update button states
+        document.getElementById('filterAll').className = type === '' ? 'btn btn-warning' : 'btn btn-outline-warning';
+        document.getElementById('filterSolid').className = type === 'solid' ? 'btn btn-primary' : 'btn btn-outline-primary';
+        document.getElementById('filterLiquid').className = type === 'liquid' ? 'btn btn-info' : 'btn btn-outline-info';
+        
+        // Filter items
+        document.querySelectorAll('.food-item').forEach(item => {
+            const itemType = item.getAttribute('data-type');
+            const searchTerm = document.getElementById('searchFood').value.toLowerCase();
+            const title = item.getAttribute('data-title');
+            
+            const matchesSearch = title.includes(searchTerm) || searchTerm === '';
+            const matchesType = type === '' || itemType === type;
+            
+            if (matchesSearch && matchesType) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
 
     function filterFood() {
         const searchTerm = document.getElementById('searchFood').value.toLowerCase();
-        const typeFilter = document.getElementById('foodTypeFilter').value;
         
         document.querySelectorAll('.food-item').forEach(item => {
             const title = item.getAttribute('data-title');
-            const type = item.getAttribute('data-type');
             
             const matchesSearch = title.includes(searchTerm) || searchTerm === '';
-            const matchesType = typeFilter === '' || type === typeFilter;
             
-            if (matchesSearch && matchesType) {
+            if (matchesSearch) {
                 item.style.display = 'block';
             } else {
                 item.style.display = 'none';
@@ -398,9 +422,8 @@
 
     function resetFoodFilters() {
         document.getElementById('searchFood').value = '';
-        document.getElementById('foodTypeFilter').value = '';
         document.getElementById('sortBy').value = 'newest';
-        filterFood();
+        filterByType(''); // Reset to show all food
     }
 
     // Initialize maps when modals are shown

@@ -193,7 +193,11 @@
                                     <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#verifyOtpModal{{ claim.id }}">
                                         Verify Pickup
                                     </button>
+                                    <a href="{{ url_for('verify_otp_page', claim_id=claim.id) }}" class="btn btn-sm btn-outline-success">
+                                        <i class="bi bi-shield-check"></i> OTP Page
+                                    </a>
                                     {% endif %}
+                                    <!-- Debug: Status is "{{ claim.status }}" -->
                                     <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#contactModal{{ claim.id }}">
                                         Contact
                                     </button>

@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}Manage Claims - Admin Dashboard{% endblock %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h1 class="h2"><i class="bi bi-hand-index"></i> Manage Claims</h1>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'success' if category == 'success' else 'info' if category == 'info' else 'warning' if category == 'warning' else 'danger' }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if claims %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Food Listing</th>
+                        <th>NGO</th>
+                        <th>Status</th>
+                        <th>Pickup Time</th>
+                        <th>People Served</th>
+                        <th>Created At</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for claim in claims %}
+                    <tr>
+                        <td>{{ claim.id }}</td>
+                        <td>
+                            <strong>{{ claim.food_listing.title }}</strong><br>
+                            <small class="text-muted">{{ claim.food_listing.quantity }} meals</small>
+                        </td>
+                        <td>
+                            <strong>{{ claim.receiver.organization or claim.receiver.username }}</strong><br>
+                            <small class="text-muted">{{ claim.receiver.email }}</small>
+                        </td>
+                        <td>
+                            {% if claim.status == 'pending' %}
+                                <span class="badge bg-warning">Pending</span>
+                            {% elif claim.status == 'confirmed' %}
+                                <span class="badge bg-info">Confirmed</span>
+                            {% elif claim.status == 'picked_up' %}
+                                <span class="badge bg-success">Picked Up</span>
+                            {% elif claim.status == 'cancelled' %}
+                                <span class="badge bg-danger">Cancelled</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ claim.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if claim.pickup_time %}
+                                {{ claim.pickup_time|datetime }}
+                            {% else %}
+                                <span class="text-muted">Not set</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if claim.people_served %}
+                                {{ claim.people_served }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ claim.created_at|datetime }}</td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="viewClaimDetails({{ claim.id }})">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                {% if claim.status in ['pending', 'confirmed'] %}
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="cancelClaim({{ claim.id }})">
+                                    <i class="bi bi-x-circle"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-inbox display-1 text-muted"></i>
+            <h3 class="mt-3">No Claims Found</h3>
+            <p class="text-muted">There are no claims in the system yet.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Claim Details Modal -->
+<div class="modal fade" id="claimModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Claim Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="claimDetails">
+                <!-- Claim details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewClaimDetails(claimId) {
+    // This would typically fetch details via AJAX
+    // For now, we'll show a simple message
+    document.getElementById('claimDetails').innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading claim details...</p>
+        </div>
+    `;
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('claimModal'));
+    modal.show();
+    
+    // Simulate loading (in real app, this would be an AJAX call)
+    setTimeout(() => {
+        document.getElementById('claimDetails').innerHTML = `
+            <p><strong>Claim ID:</strong> #${claimId}</p>
+            <p><strong>Status:</strong> <span class="badge bg-info">Active</span></p>
+            <p><strong>Notes:</strong> No additional notes available.</p>
+            <p><strong>OTP Code:</strong> **** (hidden for security)</p>
+        `;
+    }, 500);
+}
+
+function cancelClaim(claimId) {
+    if (confirm('Are you sure you want to cancel this claim? This action cannot be undone.')) {
+        // In a real implementation, this would make an AJAX call
+        alert('Claim cancellation functionality would be implemented here.');
+        // window.location.href = '/admin/cancel_claim/' + claimId;
+    }
+}
+</script>
+{% endblock %}

@@ -26,7 +26,8 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Phone</label>
-                        <input type="text" class="form-control" name="phone" value="{{ user.phone or '' }}">
+                        <input type="text" class="form-control" id="profile_phone" name="phone" 
+                               value="{{ user.phone or '' }}">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Organization (if NGO)</label>
@@ -45,6 +46,48 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Phone validation for profile
+    function validatePhoneNumber(phone) {
+        if (!phone) return true; // Phone is optional
+        const cleaned = phone.replace(/[\s\-\.\(\)]/g, '');
+        return /^\d{10}$/.test(cleaned);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const phoneInput = document.getElementById('profile_phone');
+        if (phoneInput) {
+            phoneInput.addEventListener('input', function() {
+                const isValid = validatePhoneNumber(this.value);
+                if (this.value) {
+                    if (isValid) {
+                        this.classList.remove('is-invalid');
+                        this.classList.add('is-valid');
+                    } else {
+                        this.classList.remove('is-valid');
+                        this.classList.add('is-invalid');
+                    }
+                } else {
+                    this.classList.remove('is-invalid', 'is-valid');
+                }
+            });
+
+            // Form submission validation
+            const form = phoneInput.closest('form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    const phone = phoneInput.value;
+                    if (phone && !validatePhoneNumber(phone)) {
+                        e.preventDefault();
+                        alert('Phone number must be exactly 10 digits');
+                        phoneInput.focus();
+                    }
+                });
+            }
+        }
+    });
+</script>
 
 <!-- Change Password Modal -->
 <div class="modal fade" id="changePasswordModal" tabindex="-1">

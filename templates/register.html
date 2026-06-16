@@ -68,16 +68,28 @@
                         <input type="tel" class="form-control" id="phone" name="phone">
                     </div>
                     
-                    <!-- Passwords -->
+                    <!-- Passwords with Requirements -->
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="password" class="form-label">Password *</label>
-                            <input type="password" class="form-control" id="password" name="password" required>
+                            <input type="password" class="form-control" id="password" name="password" required
+                                   placeholder="Create strong password">
                         </div>
                         <div class="col-md-6">
                             <label for="confirm_password" class="form-label">Confirm Password *</label>
-                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required
+                                   placeholder="Re-enter password">
                         </div>
+                    </div>
+                    
+                    <!-- Password Requirements -->
+                    <div class="mb-3 p-3 bg-light border rounded">
+                        <strong class="d-block mb-2">Password Requirements:</strong>
+                        <ul class="mb-0 ps-3">
+                            <li id="length-req" class="text-danger">Minimum 8 characters</li>
+                            <li id="uppercase-req" class="text-danger">At least one UPPERCASE letter (A-Z)</li>
+                            <li id="symbol-req" class="text-danger">At least one special character (!@#$%^&*)</li>
+                        </ul>
                     </div>
                     
                     <div class="mb-3">
@@ -110,6 +122,114 @@
 </div>
 
 <script>
+    // ===== VALIDATION FUNCTIONS =====
+    
+    function validatePassword(password) {
+        const checks = {
+            length: password.length >= 8,
+            uppercase: /[A-Z]/.test(password),
+            symbol: /[!@#$%^&*()_+\-=\[\]{};:'"",.<>?/\\|`~]/.test(password)
+        };
+        return checks;
+    }
+
+    function updatePasswordRequirements() {
+        const password = document.getElementById('password').value;
+        const checks = validatePassword(password);
+        
+        // Update UI indicators
+        document.getElementById('length-req').className = checks.length ? 'text-success' : 'text-danger';
+        document.getElementById('uppercase-req').className = checks.uppercase ? 'text-success' : 'text-danger';
+        document.getElementById('symbol-req').className = checks.symbol ? 'text-success' : 'text-danger';
+        
+        // Update UI text
+        document.getElementById('length-req').innerHTML = (checks.length ? '✓ ' : '') + 'Minimum 8 characters';
+        document.getElementById('uppercase-req').innerHTML = (checks.uppercase ? '✓ ' : '') + 'At least one UPPERCASE letter (A-Z)';
+        document.getElementById('symbol-req').innerHTML = (checks.symbol ? '✓ ' : '') + 'At least one special character (!@#$%^&*)';
+    }
+
+    function validatePhoneNumber(phone) {
+        if (!phone) return true; // Phone is optional
+        const cleaned = phone.replace(/[\s\-\.\(\)]/g, '');
+        return /^\d{10}$/.test(cleaned);
+    }
+
+    function updatePhoneValidation() {
+        const phone = document.getElementById('phone').value;
+        const isValid = validatePhoneNumber(phone);
+        const phoneInput = document.getElementById('phone');
+        
+        if (phone) {
+            if (isValid) {
+                phoneInput.classList.remove('is-invalid');
+                phoneInput.classList.add('is-valid');
+            } else {
+                phoneInput.classList.remove('is-valid');
+                phoneInput.classList.add('is-invalid');
+            }
+        } else {
+            phoneInput.classList.remove('is-invalid', 'is-valid');
+        }
+    }
+
+    // Add event listeners when DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        const passwordInput = document.getElementById('password');
+        const phoneInput = document.getElementById('phone');
+        
+        if (passwordInput) {
+            passwordInput.addEventListener('input', updatePasswordRequirements);
+            // Initial update
+            updatePasswordRequirements();
+        }
+        
+        if (phoneInput) {
+            phoneInput.addEventListener('input', updatePhoneValidation);
+        }
+    });
+
+    // ===== FORM SUBMISSION VALIDATION =====
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirm_password').value;
+                const phone = document.getElementById('phone').value;
+                
+                let isValid = true;
+                let errors = [];
+
+                // Validate password strength
+                const checks = validatePassword(password);
+                if (!checks.length || !checks.uppercase || !checks.symbol) {
+                    isValid = false;
+                    errors.push('Password does not meet all requirements');
+                }
+
+                // Validate password match
+                if (password !== confirmPassword) {
+                    isValid = false;
+                    errors.push('Passwords do not match');
+                }
+
+                // Validate phone if provided
+                if (phone && !validatePhoneNumber(phone)) {
+                    isValid = false;
+                    errors.push('Phone number must be exactly 10 digits');
+                }
+
+                if (!isValid) {
+                    e.preventDefault();
+                    errors.forEach(error => {
+                        alert(error);
+                    });
+                }
+            });
+        }
+    });
+
     // Show organization field for NGOs (only attach handlers if role cards are present)
     const cardRoles = document.querySelectorAll('.card-role');
     if (cardRoles.length) {
@@ -179,6 +299,48 @@
 .card-role:hover .card {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Form validation styling */
+.form-control.is-valid {
+    border-color: #28a745;
+    padding-right: calc(1.5em + 0.75rem);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%2328a745' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.form-control.is-invalid {
+    border-color: #dc3545;
+    padding-right: calc(1.5em + 0.75rem);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23dc3545' viewBox='0 0 12 12'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+/* Password requirements box */
+.bg-light.border.rounded {
+    border-color: #dee2e6 !important;
+    background-color: #f8f9fa !important;
+}
+
+#length-req, #uppercase-req, #symbol-req {
+    transition: color 0.2s;
+}
+
+#length-req::before, #uppercase-req::before, #symbol-req::before {
+    content: '✗ ';
+    font-weight: bold;
+}
+
+.text-success {
+    color: #28a745 !important;
+}
+
+.text-danger {
+    color: #dc3545 !important;
 }
 </style>
 {% endblock %}

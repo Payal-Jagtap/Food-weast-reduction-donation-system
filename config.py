@@ -5,7 +5,7 @@ load_dotenv()
 
 class Config:
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-this')
-    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'postgres://postgres:bhagya123@localhost/food_Waste_db')
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'postgresql://postgres:Payal@localhost:5432/food_waste_db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Email settings

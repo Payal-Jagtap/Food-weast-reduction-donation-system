@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}Verify OTP - FoodShare{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-shield-check"></i> OTP Verification
+                </h4>
+            </div>
+            <div class="card-body">
+                <!-- Claim Details -->
+                <div class="alert alert-info mb-4">
+                    <h6 class="alert-heading">Claim Details</h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <strong>Food Item:</strong><br>
+                            {{ claim.food_listing.title }}
+                        </div>
+                        <div class="col-6">
+                            <strong>Claimed By:</strong><br>
+                            {{ claim.receiver.organization or claim.receiver.username }}
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-6">
+                            <strong>Quantity:</strong><br>
+                            {{ claim.food_listing.quantity }} meals
+                        </div>
+                        <div class="col-6">
+                            <strong>Status:</strong><br>
+                            <span class="badge bg-primary">{{ claim.status|title }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Countdown & Expiry Warning -->
+                <div id="countdownArea" class="mb-4">
+                    {% if time_remaining > 0 %}
+                    <div class="alert alert-success" id="countdownAlert">
+                        <i class="bi bi-clock-history"></i>
+                        <strong>Time remaining to verify OTP:</strong>
+                        <span id="countdown" class="fw-bold"></span>
+                        <small class="d-block mt-1">OTP expires in 2 minutes from claim creation.</small>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-danger" id="expiredAlert">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <strong>⚠️ OTP EXPIRED!</strong><br>
+                        The 2‑minute window to verify this claim has passed.
+                        Please contact the NGO to arrange a new claim.
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Instructions -->
+                <div class="alert alert-warning mb-4">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Instructions:</strong>
+                    <ol class="mb-0 mt-2">
+                        <li>Ask the NGO representative for their 4-digit OTP code.</li>
+                        <li>Enter the OTP below within <strong>2 minutes</strong> of claim creation.</li>
+                        <li>Click "Verify OTP" to confirm pickup.</li>
+                    </ol>
+                </div>
+
+                <!-- OTP Verification Form (only shown if not expired) -->
+                {% if time_remaining > 0 %}
+                <form method="POST" id="otpForm">
+                    <div class="mb-4">
+                        <label for="otp" class="form-label">
+                            <i class="bi bi-key"></i> Enter 4-Digit OTP
+                        </label>
+                        <div class="input-group input-group-lg">
+                            <input type="text" 
+                                   class="form-control text-center" 
+                                   id="otp" 
+                                   name="otp" 
+                                   maxlength="4" 
+                                   pattern="[0-9]{4}" 
+                                   required 
+                                   placeholder="0000"
+                                   autocomplete="off">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Verify OTP
+                            </button>
+                        </div>
+                        <div class="form-text">Enter the 4-digit code provided by the NGO representative</div>
+                    </div>
+                </form>
+                {% else %}
+                <div class="alert alert-secondary">
+                    <i class="bi bi-hourglass-split"></i> OTP verification is no longer available.
+                </div>
+                {% endif %}
+
+                <!-- Action Buttons -->
+                <div class="d-flex gap-2 mt-3">
+                    <a href="{{ url_for('donor_dashboard') }}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to Dashboard
+                    </a>
+                    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#contactModal">
+                        <i class="bi bi-telephone"></i> Contact NGO
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contact Modal -->
+<div class="modal fade" id="contactModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Contact NGO</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6>NGO Information</h6>
+                <p><strong>Organization:</strong> {{ claim.receiver.organization or claim.receiver.username }}</p>
+                <p><strong>Contact Person:</strong> {{ claim.receiver.username }}</p>
+                <p><strong>Email:</strong> {{ claim.receiver.email }}</p>
+                {% if claim.receiver.phone %}
+                <p><strong>Phone:</strong> {{ claim.receiver.phone }}</p>
+                {% endif %}
+                <hr>
+                <h6>Claim Details</h6>
+                <p><strong>Food Item:</strong> {{ claim.food_listing.title }}</p>
+                <p><strong>Quantity:</strong> {{ claim.food_listing.quantity }} meals</p>
+                <p><strong>Pickup Address:</strong> {{ claim.food_listing.pickup_address }}</p>
+                <p><strong>Claim Time:</strong> {{ claim.created_at.strftime('%B %d, %Y %I:%M %p') }}</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="mailto:{{ claim.receiver.email }}" class="btn btn-primary">
+                    <i class="bi bi-envelope"></i> Send Email
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Countdown timer (2 minutes in seconds)
+let remainingSeconds = {{ time_remaining }};
+const countdownElem = document.getElementById('countdown');
+const countdownAlert = document.getElementById('countdownAlert');
+const otpForm = document.getElementById('otpForm');
+
+function formatTime(secs) {
+    const mins = Math.floor(secs / 60);
+    const secsRem = secs % 60;
+    return `${mins}:${secsRem < 10 ? '0' : ''}${secsRem}`;
+}
+
+function updateCountdown() {
+    if (remainingSeconds <= 0) {
+        // Expired – replace countdown with warning
+        if (countdownAlert) {
+            countdownAlert.outerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <strong>⚠️ OTP EXPIRED!</strong><br>
+                    The 2‑minute window has passed. Please contact the NGO to arrange a new claim.
+                </div>
+            `;
+        }
+        if (otpForm) otpForm.style.display = 'none';
+        return;
+    }
+    if (countdownElem) countdownElem.textContent = formatTime(remainingSeconds);
+    remainingSeconds--;
+    setTimeout(updateCountdown, 1000);
+}
+
+if (remainingSeconds > 0) {
+    updateCountdown();
+} else if (countdownAlert) {
+    // Already expired on page load
+    countdownAlert.outerHTML = `
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <strong>⚠️ OTP EXPIRED!</strong><br>
+            The 2‑minute window has passed. Please contact the NGO to arrange a new claim.
+        </div>
+    `;
+    if (otpForm) otpForm.style.display = 'none';
+}
+
+// Auto-format OTP input (only if form exists)
+const otpInput = document.getElementById('otp');
+if (otpInput) {
+    otpInput.addEventListener('input', function(e) {
+        this.value = this.value.replace(/[^0-9]/g, '').slice(0, 4);
+    });
+}
+
+// Form submission validation
+if (otpForm) {
+    otpForm.addEventListener('submit', function(e) {
+        const otpValue = document.getElementById('otp').value;
+        if (otpValue.length !== 4) {
+            e.preventDefault();
+            alert('Please enter a valid 4-digit OTP code.');
+            return false;
+        }
+    });
+}
+</script>
+{% endblock %}

@@ -16,36 +16,31 @@
                         <h5 class="mb-3">Basic Information</h5>
                         
                         <div class="mb-3">
-                            <label for="title" class="form-label">Food Item / Meal Name *</label>
+                            <label for="food_type" class="form-label">Food Type *</label>
+                            <select class="form-select" id="food_type" name="food_type" required>
+                                <option value="">Select type...</option>
+                                <option value="solid" {% if copy and copy.food_type == 'solid' %}selected{% endif %}>Solid</option>
+                                <option value="liquid" {% if copy and copy.food_type == 'liquid' %}selected{% endif %}>Liquid</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Food Name*</label>
                             <input type="text" class="form-control" id="title" name="title" 
-                                   placeholder="e.g., Buffet Meals, Sandwiches, Packaged Food"
+
                                    value="{{ copy.title if copy else '' }}" required>
                         </div>
                         
                         <div class="mb-3">
-                            <label for="description" class="form-label">Description</label>
+                            <label for="description" class="form-label">Description *</label>
                             <textarea class="form-control" id="description" name="description" 
-                                      rows="3" placeholder="Describe the food items...">{{ copy.description if copy else '' }}</textarea>
+                                      rows="3" placeholder="Describe the food items..." required>{{ copy.description if copy else '' }}</textarea>
                         </div>
                         
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="food_type" class="form-label">Food Type *</label>
-                                <select class="form-select" id="food_type" name="food_type" required>
-                                    <option value="">Select type...</option>
-                                    <option value="cooked" {% if copy and copy.food_type == 'cooked' %}selected{% endif %}>Cooked Food</option>
-                                    <option value="packaged" {% if copy and copy.food_type == 'packaged' %}selected{% endif %}>Packaged Food</option>
-                                    <option value="raw" {% if copy and copy.food_type == 'raw' %}selected{% endif %}>Raw Ingredients</option>
-                                    <option value="baked" {% if copy and copy.food_type == 'baked' %}selected{% endif %}>Baked Goods</option>
-                                    <option value="fresh" {% if copy and copy.food_type == 'fresh' %}selected{% endif %}>Fresh Produce</option>
-                                    <option value="frozen" {% if copy and copy.food_type == 'frozen' %}selected{% endif %}>Frozen Food</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="quantity" class="form-label">Quantity (Number of meals) *</label>
-                                <input type="number" class="form-control" id="quantity" name="quantity" 
-                                       min="1" max="10000" value="{{ copy.quantity if copy else '' }}" required>
-                            </div>
+                        <div class="mb-3">
+                            <label for="quantity" class="form-label">Quantity (Number of meals) *</label>
+                            <input type="number" class="form-control" id="quantity" name="quantity" 
+                                   min="1" max="10000" value="{{ copy.quantity if copy else '' }}" required>
                         </div>
                         
                         <!-- Image Upload -->
@@ -65,7 +60,6 @@
                         <div class="mb-3">
                             <label for="location" class="form-label">Location Name *</label>
                             <input type="text" class="form-control" id="location" name="location" 
-                                   placeholder="e.g., Grand Hotel, Main Kitchen"
                                    value="{{ copy.location if copy else '' }}" required>
                         </div>
                         
@@ -74,40 +68,38 @@
                             <div class="input-group">
                                 <textarea class="form-control" id="pickup_address" name="pickup_address" 
                                           rows="2" placeholder="Full address for pickup..." required>{{ copy.pickup_address if copy else '' }}</textarea>
-                                <button type="button" class="btn btn-outline-secondary" onclick="getCurrentLocation()">
+                                <button type="button" class="btn btn-outline-secondary" onclick="getCurrentLocation(event)">
                                     <i class="bi bi-geo-alt"></i> GPS
                                 </button>
                             </div>
                             <small class="text-muted">Click GPS to auto-detect your current location</small>
+                            <div id="mapLinkContainer" class="mt-2" style="display:none;">
+                                <a id="viewMapLink" href="#" target="_blank" class="link-primary">View detected location on map</a>
+                            </div>
                         </div>
                         
                         <!-- Hidden fields for coordinates -->
                         <input type="hidden" id="latitude" name="latitude">
                         <input type="hidden" id="longitude" name="longitude">
                         
-                        <div class="row">
+                        <!-- Automatic Pickup Time (Hidden) -->
+                        <div class="row" style="display: none;">
                             <div class="col-md-6 mb-3">
-                                <label for="pickup_start" class="form-label">Pickup Start Time *</label>
                                 <input type="datetime-local" class="form-control" id="pickup_start" 
                                        name="pickup_start" value="{{ default_start }}" required>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="pickup_end" class="form-label">Pickup End Time *</label>
                                 <input type="datetime-local" class="form-control" id="pickup_end" 
                                        name="pickup_end" value="{{ default_end }}" required>
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- Food Safety -->
-                    <div class="mb-4">
-                        <h5 class="mb-3">Food Safety Information</h5>
                         
-                        <div class="mb-3">
-                            <label for="allergens" class="form-label">Allergens / Special Notes</label>
-                            <textarea class="form-control" id="allergens" name="allergens" 
-                                      rows="2" placeholder="e.g., Contains nuts, gluten-free, etc.">{{ copy.allergens if copy else '' }}</textarea>
-                            <div class="form-text">Please list any allergens or special handling instructions.</div>
+                        <!-- Display Automatic Times -->
+                        <div class="alert alert-info">
+                            <h6><i class="bi bi-clock"></i> Automatic Pickup Schedule</h6>
+                            <p class="mb-1"><strong>Start Time:</strong> {{ display_start }}</p>
+                            <p class="mb-0"><strong>End Time:</strong> {{ display_end }}</p>
+                            <small class="text-muted">Pickup begins now and ends after 15 minutes</small>
                         </div>
                     </div>
                     
@@ -119,30 +111,16 @@
                 </form>
             </div>
         </div>
-        
-        <!-- Food Safety Guidelines -->
-        <div class="card mt-4 border-info">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0">Food Safety Guidelines</h5>
-            </div>
-            <div class="card-body">
-                <ul class="mb-0">
-                    <li>Only donate food that is safe to eat and within its shelf life</li>
-                    <li>Keep hot food hot (above 60°C) and cold food cold (below 5°C)</li>
-                    <li>Pack food securely to prevent contamination during transport</li>
-                    <li>Label food with preparation time and any allergens</li>
-                    <li>Follow local health department guidelines</li>
-                </ul>
-            </div>
-        </div>
     </div>
 </div>
 
 <script>
     // GPS Location Function
-    function getCurrentLocation() {
+    function getCurrentLocation(event) {
         if (navigator.geolocation) {
-            const button = event.target;
+            const button = event.currentTarget;
+            const mapLinkContainer = document.getElementById('mapLinkContainer');
+            const viewMapLink = document.getElementById('viewMapLink');
             button.disabled = true;
             button.innerHTML = '<i class="bi bi-geo-alt"></i> Getting location...';
             
@@ -155,12 +133,20 @@
                     document.getElementById('latitude').value = lat;
                     document.getElementById('longitude').value = lon;
                     
+                    // Show map link so user can verify the location
+                    if (viewMapLink) {
+                        viewMapLink.href = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}&zoom=16`;
+                        mapLinkContainer.style.display = 'block';
+                    }
+                    
                     // Reverse geocode to get address (using Nominatim)
                     fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
                         .then(response => response.json())
                         .then(data => {
                             if (data && data.display_name) {
                                 document.getElementById('pickup_address').value = data.display_name;
+                            } else {
+                                document.getElementById('pickup_address').value = `Lat: ${lat}, Lon: ${lon}`;
                             }
                         })
                         .catch(error => {
@@ -178,6 +164,11 @@
                     alert('Unable to get your location. Please enter address manually.');
                     button.disabled = false;
                     button.innerHTML = '<i class="bi bi-geo-alt"></i> GPS';
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 0
                 }
             );
         } else {
@@ -196,7 +187,7 @@
         // Auto-adjust end time when start time changes
         document.getElementById('pickup_start').addEventListener('change', function() {
             const startTime = new Date(this.value);
-            const endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000); // 2 hours later
+            const endTime = new Date(startTime.getTime() + 15 * 60 * 1000); // 15 minutes later
             document.getElementById('pickup_end').value = endTime.toISOString().slice(0, 16);
         });
     });
