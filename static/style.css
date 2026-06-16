@@ -169,30 +169,31 @@ body {
 
 /* Admin Dashboard Enhancements */
 .stat-card {
-    border-radius: 14px;
+    border-radius: 12px;
     color: #fff;
-    padding: 1.5rem 1rem;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    padding: 1.2rem 1rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     transition: transform .15s ease, box-shadow .15s ease;
+    min-height: 120px;
 }
 .stat-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 12px 36px rgba(0,0,0,0.15);
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.11);
 }
 .stat-card .card-title {
-    font-size: 2.5rem;
+    font-size: 1.8rem;
     font-weight: 800;
-    letter-spacing: -1px;
+    letter-spacing: -0.4px;
 }
 .stat-card .card-text {
-    font-size: 1rem;
-    font-weight: 500;
-    opacity: 0.95;
+    font-size: 0.85rem;
+    font-weight: 600;
+    opacity: 0.92;
 }
-.stat-card-blue { background: linear-gradient(135deg, #4e73df 0%, #224abe 100%); }
-.stat-card-green { background: linear-gradient(135deg, #20c997 0%, #1aa179 100%); }
-.stat-card-yellow { background: linear-gradient(135deg, #ffc107 0%, #e6a800 100%); color: #2d2d2d; }
-.stat-card-teal { background: linear-gradient(135deg, #17a2b8 0%, #0f8a95 100%); }
+.stat-card-blue { background: linear-gradient(135deg, #6fa0ff 0%, #3b63d2 100%); }
+.stat-card-green { background: linear-gradient(135deg, #7fe0b7 0%, #2f8e57 100%); }
+.stat-card-yellow { background: linear-gradient(135deg, #fff6d6 0%, #f1c55a 100%); color: #2d2d2d; }
+.stat-card-teal { background: linear-gradient(135deg, #99e6ef 0%, #1ea0a6 100%); }
 
 .quick-actions { 
     justify-content: flex-start;
@@ -227,23 +228,41 @@ body {
 }
 
 .quick-action-box {
-    display: block !important;
+    display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
     text-align: center !important;
-    gap: 1.2rem !important;
-    min-height: 200px !important;
-    padding: 2rem 1.5rem !important;
-    background: #d4edda !important;
-    border: 2px solid #a8d5a3 !important;
+    gap: 0.7rem !important;
+    min-height: 150px !important;
+    padding: 1.2rem 1rem !important;
+    background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(237,247,237,0.98) 100%) !important;
+    border: 1px solid rgba(40,167,69,0.15) !important;
     border-radius: 16px !important;
     text-decoration: none !important;
-    color: #2d6a3e !important;
-    transition: all .2s ease !important;
-    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.1) !important;
+    color: #1f5130 !important;
+    transition: transform .2s ease, box-shadow .2s ease, background .2s ease !important;
+    box-shadow: 0 8px 20px rgba(31,81,48,0.06) !important;
     width: 100% !important;
-    height: auto !important;
+    height: 100% !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.quick-action-box::before {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    background: radial-gradient(circle at top left, rgba(40,167,69,0.16), transparent 40%) !important;
+    pointer-events: none !important;
+}
+
+.quick-action-box::after {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    background: radial-gradient(circle at bottom right, rgba(34,139,34,0.12), transparent 35%) !important;
+    pointer-events: none !important;
 }
 
 .quick-action-box,
@@ -251,58 +270,107 @@ body {
 .quick-action-box:visited,
 .quick-action-box:active,
 .quick-action-box:focus {
-    color: #2d6a3e !important;
+    color: #1f5130 !important;
     text-decoration: none !important;
 }
 
 .quick-action-box:hover {
-    transform: translateY(-8px) !important;
-    box-shadow: 0 16px 36px rgba(40, 167, 69, 0.18) !important;
-    background: #c1e8cc !important;
-    border-color: #8ec582 !important;
-    text-decoration: none !important;
-    color: #2d6a3e !important;
+    transform: translateY(-6px) !important;
+    box-shadow: 0 22px 48px rgba(31,81,48,0.16) !important;
+    background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(224,244,226,1) 100%) !important;
+    border-color: rgba(40,167,69,0.25) !important;
 }
 
 .quick-action-box i {
-    display: block !important;
-    font-size: 3rem !important;
-    color: #28a745 !important;
-    margin-bottom: 0.5rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 52px !important;
+    height: 52px !important;
+    border-radius: 50% !important;
+    background: rgba(40,167,69,0.11) !important;
+    color: #198754 !important;
+    font-size: 1.8rem !important;
+    margin-bottom: 0 !important;
+    box-shadow: inset 0 0 0 1px rgba(40,167,69,0.08) !important;
+    z-index: 1 !important;
 }
 
 .quick-action-box .action-text {
     display: block !important;
-    font-size: 1.25rem !important;
+    font-size: 0.95rem !important;
     font-weight: 700 !important;
     text-align: center !important;
-    letter-spacing: 0.3px !important;
-    color: #2d6a3e !important;
-    line-height: 1.4 !important;
+    letter-spacing: 0.15px !important;
+    color: #1f5130 !important;
+    line-height: 1.3 !important;
+    z-index: 1 !important;
 }
 
 @media (max-width: 1200px) {
     .quick-action-box {
-        min-height: 180px !important;
-        padding: 1.75rem 1.25rem !important;
+        min-height: 140px !important;
+        padding: 1rem 0.85rem !important;
     }
     .quick-action-box i {
-        font-size: 2.5rem !important;
+        width: 48px !important;
+        height: 48px !important;
+        font-size: 1.6rem !important;
     }
     .quick-action-box .action-text {
-        font-size: 1.1rem !important;
+        font-size: 0.88rem !important;
     }
 }
 
 @media (max-width: 768px) {
     .quick-action-box {
-        min-height: 160px !important;
-        padding: 1.5rem 1rem !important;
+        min-height: 130px !important;
+        padding: 1rem 0.8rem !important;
     }
     .quick-action-box i {
-        font-size: 2rem !important;
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 1.4rem !important;
     }
     .quick-action-box .action-text {
-        font-size: 0.95rem !important;
+        font-size: 0.8rem !important;
     }
+}
+
+/* Password Visibility Toggle */
+.password-input-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-input-group .form-control {
+    padding-right: 45px;
+}
+
+.password-toggle-icon {
+    position: absolute;
+    right: 12px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    color: #6c757d;
+    background: none;
+    border: none;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 35px;
+    height: 35px;
+    z-index: 10;
+    transition: color 0.2s ease;
+}
+
+.password-toggle-icon:hover {
+    color: #495057;
+}
+
+.password-toggle-icon:focus {
+    outline: none;
+    color: #198754;
 }

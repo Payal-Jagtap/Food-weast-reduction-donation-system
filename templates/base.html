@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     
     {% block extra_css %}{% endblock %}
 </head>
@@ -225,6 +225,56 @@
                 // Refresh notifications every 30 seconds
                 setInterval(loadNotifications, 30000);
             }
+        });
+
+        // Password visibility toggle
+        function togglePasswordVisibility(button) {
+            const inputField = button.previousElementSibling;
+            const icon = button.querySelector('i');
+            const isPassword = inputField.type === 'password';
+            
+            if (isPassword) {
+                inputField.type = 'text';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            } else {
+                inputField.type = 'password';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            }
+        }
+
+        // Auto-initialize password toggles on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Find all password input fields
+            const passwordInputs = document.querySelectorAll('input[type="password"]');
+            
+            passwordInputs.forEach(input => {
+                // Check if it's not already wrapped
+                if (!input.parentElement.classList.contains('password-input-group')) {
+                    // Create wrapper div
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'password-input-group';
+                    
+                    // Create eye icon button
+                    const eyeButton = document.createElement('button');
+                    eyeButton.type = 'button';
+                    eyeButton.className = 'password-toggle-icon';
+                    eyeButton.innerHTML = '<i class="bi bi-eye-slash"></i>';
+                    eyeButton.setAttribute('tabindex', '-1');
+                    
+                    // Prevent form submission when clicking eye icon
+                    eyeButton.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        togglePasswordVisibility(this);
+                    });
+                    
+                    // Move input into wrapper
+                    input.parentNode.insertBefore(wrapper, input);
+                    wrapper.appendChild(input);
+                    wrapper.appendChild(eyeButton);
+                }
+            });
         });
     </script>
     

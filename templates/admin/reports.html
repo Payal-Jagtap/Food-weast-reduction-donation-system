@@ -7,6 +7,20 @@
     background: white;
     border-radius: 15px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid #e3e6f0;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    height: 360px; /* fixed container height so both charts match */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Ensure both chart containers are visually balanced */
+.chart-container {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     padding: 2rem;
     margin-bottom: 2rem;
     border: 1px solid #e3e6f0;
@@ -25,6 +39,18 @@
     margin-bottom: 1.5rem;
     padding-bottom: 0.5rem;
     border-bottom: 2px solid #28a745;
+}
+
+.chart-container canvas {
+    flex: 1 1 auto;
+    width: 100% !important;
+    height: auto !important;
+}
+
+/* Constrain the doughnut chart so it doesn't overflow its container */
+#usersChart {
+    max-width: 420px;
+    margin: 0 auto;
 }
 
 .stats-card {
@@ -134,22 +160,6 @@
         </div>
     </div>
 
-    <!-- Charts Row 2 -->
-    <div class="row mb-4">
-        <div class="col-xl-6 col-lg-12 mb-4">
-            <div class="chart-container">
-                <h5 class="chart-title"><i class="bi bi-hand-index me-2"></i>Total Claims</h5>
-                <canvas id="claimsChart"></canvas>
-            </div>
-        </div>
-        <div class="col-xl-6 col-lg-12 mb-4">
-            <div class="chart-container">
-                <h5 class="chart-title"><i class="bi bi-heart-fill me-2"></i>Meals Served</h5>
-                <canvas id="mealsChart"></canvas>
-            </div>
-        </div>
-    </div>
-
     <!-- KPI Cards -->
     <div class="row">
         <div class="col-xl-4 col-md-6 mb-4">
@@ -191,9 +201,11 @@
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: { position: 'bottom' }
-            }
+            },
+            cutout: '55%'
         }
     });
     
@@ -212,50 +224,11 @@
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             scales: { y: { beginAtZero: true } }
         }
     });
     
-    // Total Claims Chart
-    const claimsCtx = document.getElementById('claimsChart').getContext('2d');
-    new Chart(claimsCtx, {
-        type: 'pie',
-        data: {
-            labels: ['Completed', 'Pending', 'Rejected'],
-            datasets: [{
-                data: [1, 5, 0],
-                backgroundColor: ['#43e97b', '#4facfe', '#f5576c']
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { position: 'bottom' }
-            }
-        }
-    });
-    
-    // Meals Served Chart
-    const mealsCtx = document.getElementById('mealsChart').getContext('2d');
-    new Chart(mealsCtx, {
-        type: 'line',
-        data: {
-            labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5'],
-            datasets: [{
-                label: 'Meals Distributed',
-                data: [0, 0, 0, 0, 0],
-                borderColor: '#38f9d7',
-                backgroundColor: 'rgba(56, 249, 215, 0.1)',
-                borderWidth: 3,
-                fill: true,
-                tension: 0.4,
-                pointRadius: 5
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: { y: { beginAtZero: true } }
-        }
-    });
+
 </script>
 {% endblock %}
