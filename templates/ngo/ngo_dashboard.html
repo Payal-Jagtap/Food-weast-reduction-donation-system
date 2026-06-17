@@ -163,9 +163,10 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#contactModal{{ claim.id }}">
-                                        <i class="bi bi-telephone"></i> Contact
-                                    </button>
+                                    <a class="btn btn-sm btn-outline-primary"
+                                       href="mailto:{{ claim.food_listing.donor.email }}?subject={{ ('FoodShare claim inquiry for ' ~ claim.food_listing.title)|urlencode }}&body={{ ('Hello ' ~ (claim.food_listing.donor.organization or claim.food_listing.donor.username) ~ ',%0D%0A%0D%0AI would like to coordinate pickup for the food item ' ~ claim.food_listing.title ~ '.%0D%0A%0D%0AThanks,')|urlencode }}">
+                                        <i class="bi bi-envelope"></i> Contact
+                                    </a>
                                 </td>
                             </tr>
                             {% endfor %}

@@ -5,3 +5,23 @@ instance/
 *.db
 .env
 .DS_Store
+# Virtual Environment
+venv/
+env/
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Uploads
+static/uploads/
+
+# Environment variables
+.env
+
+# Database (if local)
+*.db
+
+# VS Code
+.vscode/

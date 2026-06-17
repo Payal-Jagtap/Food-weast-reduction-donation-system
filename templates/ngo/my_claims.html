@@ -48,6 +48,8 @@
                 {% if active_claims %}
                 <div class="row">
                     {% for claim in active_claims %}
+                    {% set otp_age_seconds = (datetime.utcnow() - claim.created_at).total_seconds() %}
+                    {% set otp_is_expired = otp_age_seconds >= 600 %}
                     <div class="col-md-6 mb-4">
                         <div class="card h-100 border-primary">
                             <div class="card-body">
@@ -63,7 +65,11 @@
                                             {{ claim.status|title }}
                                         </span>
                                         {% if claim.status in ['pending', 'confirmed'] %}
+                                        {% if otp_is_expired %}
+                                        <span class="badge bg-secondary">OTP expired</span>
+                                        {% else %}
                                         <span class="badge bg-dark">OTP: {{ claim.otp_code }}</span>
+                                        {% endif %}
                                         {% endif %}
                                     </div>
                                 </div>
@@ -86,18 +92,25 @@
                                 
                                 <div class="d-grid gap-2">
                                     {% if claim.status in ['pending', 'confirmed'] %}
+                                    {% if otp_is_expired %}
+                                    <div class="alert alert-danger small py-2">
+                                        <i class="bi bi-exclamation-triangle"></i>
+                                        <strong>OTP expired</strong> - The 2-minute verification window has passed.
+                                    </div>
+                                    {% else %}
                                     <div class="alert alert-info small py-2">
                                         <i class="bi bi-clock"></i> 
-                                        <strong>OTP expires in 2 hours</strong> - Complete pickup before timeout
+                                        <strong>OTP expires in 2 minutes</strong> - Complete pickup before timeout
                                     </div>
                                     {% endif %}
-                                    <button class="btn btn-outline-primary" data-bs-toggle="modal" 
-                                            data-bs-target="#contactModal{{ claim.id }}">
-                                        <i class="bi bi-telephone"></i> Contact Donor
-                                    </button>
+                                    {% endif %}
+                                                <a class="btn btn-outline-primary"
+                                                    href="https://mail.google.com/mail/?view=cm&fs=1&to={{ claim.food_listing.donor.email|urlencode }}&su={{ ('FoodShare claim inquiry for ' ~ claim.food_listing.title)|urlencode }}&body={{ ('Hello ' ~ (claim.food_listing.donor.organization or claim.food_listing.donor.username) ~ ',%0D%0A%0D%0AI would like to coordinate pickup for the food item ' ~ claim.food_listing.title ~ '.%0D%0A%0D%0AThanks,')|urlencode }}"
+                                                    target="_blank" rel="noopener noreferrer">
+                                        <i class="bi bi-envelope"></i> Contact Donor
+                                    </a>
                                     {% if claim.status == 'pending' %}
-                                    <button class="btn btn-warning" data-bs-toggle="modal" 
-                                            data-bs-target="#updateModal{{ claim.id }}">
+                                    <button type="button" class="btn btn-warning" onclick="openUpdateModal('{{ claim.id }}')">
                                         <i class="bi bi-pencil"></i> Update Status
                                     </button>
                                     {% endif %}
@@ -132,7 +145,8 @@
                                 </div>
                                 <div class="modal-footer">
                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                    <a href="mailto:{{ claim.food_listing.donor.email }}" class="btn btn-primary">
+                                    <a href="https://mail.google.com/mail/?view=cm&fs=1&to={{ claim.food_listing.donor.email|urlencode }}&su={{ ('FoodShare claim inquiry for ' ~ claim.food_listing.title)|urlencode }}&body={{ ('Hello ' ~ (claim.food_listing.donor.organization or claim.food_listing.donor.username) ~ ',%0D%0A%0D%0AI would like to coordinate pickup for the food item ' ~ claim.food_listing.title ~ '.%0D%0A%0D%0AThanks,')|urlencode }}"
+                                       target="_blank" rel="noopener noreferrer" class="btn btn-primary">
                                         <i class="bi bi-envelope"></i> Send Email
                                     </a>
                                 </div>
@@ -153,11 +167,16 @@
                                     <form id="updateForm{{ claim.id }}">
                                         <div class="mb-3">
                                             <label class="form-label">Status</label>
-                                            <select class="form-select" name="status">
+                                            <select class="form-select" name="status" id="statusSelect{{ claim.id }}" onchange="toggleOtpField('{{ claim.id }}')">
                                                 <option value="confirmed" selected>Confirmed - We will pick up</option>
                                                 <option value="picked_up">Picked Up</option>
                                                 <option value="cancelled">Cancel Claim</option>
                                             </select>
+                                        </div>
+                                        <div class="mb-3 d-none" id="otpField{{ claim.id }}">
+                                            <label class="form-label">Enter OTP</label>
+                                            <input type="text" class="form-control" name="otp" maxlength="4"
+                                                   placeholder="Enter the 4-digit OTP">
                                         </div>
                                         <div class="mb-3">
                                             <label class="form-label">Notes (Optional)</label>
@@ -230,12 +249,12 @@
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-primary" data-bs-toggle="modal" 
-                                                data-bs-target="#contactModal{{ claim.id }}">
+                                                     <a class="btn btn-outline-primary"
+                                                         href="https://mail.google.com/mail/?view=cm&fs=1&to={{ claim.food_listing.donor.email|urlencode }}&su={{ ('FoodShare claim inquiry for ' ~ claim.food_listing.title)|urlencode }}&body={{ ('Hello ' ~ (claim.food_listing.donor.organization or claim.food_listing.donor.username) ~ ',%0D%0A%0D%0AI would like to coordinate pickup for the food item ' ~ claim.food_listing.title ~ '.%0D%0A%0D%0AThanks,')|urlencode }}"
+                                                         target="_blank" rel="noopener noreferrer">
                                             Contact
-                                        </button>
-                                        <button class="btn btn-outline-warning" data-bs-toggle="modal" 
-                                                data-bs-target="#updateModal{{ claim.id }}">
+                                        </a>
+                                        <button type="button" class="btn btn-outline-warning" onclick="openUpdateModal('{{ claim.id }}')">
                                             Update
                                         </button>
                                     </div>
@@ -394,6 +413,8 @@
                         </thead>
                         <tbody>
                             {% for claim in claims %}
+                            {% set otp_age_seconds = (datetime.utcnow() - claim.created_at).total_seconds() %}
+                            {% set otp_is_expired = otp_age_seconds >= 600 %}
                             <tr>
                                 <td>{{ claim.food_listing.title }}</td>
                                 <td>{{ claim.food_listing.donor.organization or claim.food_listing.donor.username }}</td>
@@ -406,20 +427,75 @@
                                     }}">
                                         {{ claim.status|title }}
                                     </span>
-                                    {% if claim.status == 'confirmed' %}
+                                    {% if claim.status in ['pending', 'confirmed'] %}
+                                    {% if otp_is_expired %}
+                                    <span class="badge bg-secondary">OTP expired</span>
+                                    {% else %}
                                     <span class="badge bg-dark">OTP: {{ claim.otp_code }}</span>
+                                    {% endif %}
                                     {% endif %}
                                 </td>
                                 <td>{{ claim.created_at.strftime('%Y-%m-%d') }}</td>
                                 <td>{{ claim.pickup_time.strftime('%Y-%m-%d') if claim.pickup_time else 'N/A' }}</td>
                                 <td>{{ claim.people_served or 'N/A' }}</td>
                                 <td>
-                                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" 
-                                            data-bs-target="#contactModal{{ claim.id }}">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#detailsModal{{ claim.id }}">
                                         Details
                                     </button>
                                 </td>
                             </tr>
+
+                            <!-- Details Modal -->
+                            <div class="modal fade" id="detailsModal{{ claim.id }}" tabindex="-1">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Claim Details</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <h6>Food Item</h6>
+                                                    <p class="mb-1"><strong>Name:</strong> {{ claim.food_listing.title }}</p>
+                                                    <p class="mb-1"><strong>Quantity:</strong> {{ claim.food_listing.quantity }} meals</p>
+                                                    <p class="mb-1"><strong>Status:</strong> {{ claim.status|title }}</p>
+                                                    <p class="mb-0"><strong>Claimed On:</strong> {{ claim.created_at.strftime('%B %d, %Y %I:%M %p') }}</p>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <h6>Pickup Information</h6>
+                                                    <p class="mb-1"><strong>Donor:</strong> {{ claim.food_listing.donor.organization or claim.food_listing.donor.username }}</p>
+                                                    <p class="mb-1"><strong>Pickup Date:</strong> {{ claim.food_listing.pickup_end.strftime('%B %d, %Y') }}</p>
+                                                    <p class="mb-1"><strong>Pickup Time:</strong> {{ claim.food_listing.pickup_end.strftime('%I:%M %p') }}</p>
+                                                    <p class="mb-0"><strong>Location:</strong> {{ claim.food_listing.location }}</p>
+                                                </div>
+                                                <div class="col-12">
+                                                    <h6>Address</h6>
+                                                    <p class="mb-0">{{ claim.food_listing.pickup_address or claim.food_listing.location }}</p>
+                                                </div>
+                                                <div class="col-12">
+                                                    <h6>Contact Information</h6>
+                                                    <p class="mb-0">
+                                                        <i class="bi bi-person"></i> {{ claim.food_listing.donor.username }}<br>
+                                                        <i class="bi bi-envelope"></i> {{ claim.food_listing.donor.email }}
+                                                        {% if claim.food_listing.donor.phone %}
+                                                        <br><i class="bi bi-telephone"></i> {{ claim.food_listing.donor.phone }}
+                                                        {% endif %}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                            <a class="btn btn-primary"
+                                               href="https://mail.google.com/mail/?view=cm&fs=1&to={{ claim.food_listing.donor.email|urlencode }}&su={{ ('FoodShare claim inquiry for ' ~ claim.food_listing.title)|urlencode }}&body={{ ('Hello ' ~ (claim.food_listing.donor.organization or claim.food_listing.donor.username) ~ ',%0D%0A%0D%0AI would like to coordinate pickup for the food item ' ~ claim.food_listing.title ~ '.%0D%0A%0D%0AThanks,')|urlencode }}"
+                                               target="_blank" rel="noopener noreferrer">
+                                                <i class="bi bi-envelope"></i> Send Email
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -509,6 +585,35 @@
         });
     }
 
+    function toggleOtpField(claimId) {
+        const statusSelect = document.getElementById('statusSelect' + claimId);
+        const otpField = document.getElementById('otpField' + claimId);
+        const otpInput = otpField ? otpField.querySelector('input[name="otp"]') : null;
+
+        if (!statusSelect || !otpField) {
+            return;
+        }
+
+        const shouldShow = statusSelect.value === 'picked_up';
+        otpField.classList.toggle('d-none', !shouldShow);
+        if (otpInput) {
+            otpInput.required = shouldShow;
+            if (!shouldShow) {
+                otpInput.value = '';
+            }
+        }
+    }
+
+    function openUpdateModal(claimId) {
+        const modalElement = document.getElementById('updateModal' + claimId);
+        if (!modalElement || typeof bootstrap === 'undefined') {
+            alert('Unable to open the update form. Please refresh the page and try again.');
+            return;
+        }
+
+        bootstrap.Modal.getOrCreateInstance(modalElement).show();
+    }
+
     function submitReview(claimId) {
         const form = document.getElementById('reviewForm' + claimId);
         const rating = form.querySelector('input[name="rating"]:checked');
@@ -535,8 +640,14 @@
             if (data.success) {
                 const modal = bootstrap.Modal.getInstance(document.getElementById('reviewModal' + claimId));
                 modal.hide();
-                alert('Thank you for your review!');
+                location.reload();
+            } else {
+                alert('Error: ' + (data.error || 'Unable to submit review'));
             }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error submitting review: ' + error);
         });
     }
 </script>

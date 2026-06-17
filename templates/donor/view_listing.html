@@ -19,7 +19,8 @@
                                 'success' if listing.status == 'available' 
                                 else 'warning' if listing.status == 'claimed' 
                                 else 'info' if listing.status == 'picked_up'
-                                else 'secondary'
+                                else 'secondary' if listing.status == 'expired'
+                                else 'danger'
                             }}">
                                 {{ listing.status|title }}
                             </span>
@@ -39,6 +40,20 @@
                             {{ listing.pickup_end.strftime('%B %d, %Y %I:%M %p') }}
                         </p>
                         <p><strong>Created:</strong> {{ listing.created_at.strftime('%B %d, %Y') }}</p>
+
+                        <h5 class="mt-4">Map</h5>
+                        <div id="listingMap" class="border rounded" style="height: 280px;"></div>
+                        <small class="text-muted d-block mt-2">Map location is shown from saved coordinates or the pickup address.</small>
+
+                        <hr>
+                        <h5>Contact Information</h5>
+                        <p class="mb-0">
+                            <i class="bi bi-person"></i> {{ listing.donor.organization or listing.donor.username }}<br>
+                            {% if listing.donor.phone %}
+                            <i class="bi bi-telephone"></i> {{ listing.donor.phone }}<br>
+                            {% endif %}
+                            <i class="bi bi-envelope"></i> {{ listing.donor.email }}
+                        </p>
                     </div>
                 </div>
                 
@@ -73,4 +88,53 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const mapElement = document.getElementById('listingMap');
+        if (!mapElement || typeof L === 'undefined') {
+            return;
+        }
+
+        const latitude = {{ listing.latitude if listing.latitude is not none else 'null' }};
+        const longitude = {{ listing.longitude if listing.longitude is not none else 'null' }};
+        const listingTitle = {{ listing.title|tojson }};
+        const listingAddress = {{ (listing.pickup_address or listing.location or '')|tojson }};
+
+        function renderMap(lat, lon) {
+            const map = L.map('listingMap').setView([lat, lon], 15);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            L.marker([lat, lon]).addTo(map)
+                .bindPopup(listingTitle)
+                .openPopup();
+        }
+
+        if (latitude !== null && longitude !== null) {
+            renderMap(latitude, longitude);
+            return;
+        }
+
+        if (!listingAddress) {
+            mapElement.innerHTML = '<div class="p-3 text-muted">Map location is not available for this listing.</div>';
+            return;
+        }
+
+        fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(listingAddress))
+            .then(response => response.json())
+            .then(results => {
+                if (results && results.length > 0) {
+                    renderMap(parseFloat(results[0].lat), parseFloat(results[0].lon));
+                } else {
+                    mapElement.innerHTML = '<div class="p-3 text-muted">Map location could not be resolved from the saved address.</div>';
+                }
+            })
+            .catch(() => {
+                mapElement.innerHTML = '<div class="p-3 text-muted">Map location could not be loaded.</div>';
+            });
+    });
+</script>
 {% endblock %}

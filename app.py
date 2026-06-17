@@ -7,7 +7,7 @@ from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import inspect, text
 from werkzeug.utils import secure_filename
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 import os
 import random
@@ -299,7 +299,9 @@ def calculate_distance(lat1, lon1, lat2, lon2):
 def format_datetime(value, format='%b %d, %Y %I:%M %p'):
     if value is None:
         return ""
-    return value.strftime(format)
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value.astimezone().strftime(format)
 
 app.jinja_env.filters['datetime'] = format_datetime
 
@@ -701,6 +703,7 @@ def donor_dashboard():
     if current_user.role != 'donor':
         flash('Access denied', 'danger')
         return redirect(url_for('dashboard'))
+    cleanup_expired_listings()
     listings = FoodListing.query.filter_by(donor_id=current_user.id)\
         .order_by(FoodListing.created_at.desc()).limit(5).all()
     claims = Claim.query.join(FoodListing)\
@@ -783,6 +786,17 @@ def create_listing():
                 listing.image = filename
         
         db.session.add(listing)
+
+        # Notify all verified NGOs that a new listing is available
+        verified_ngos = User.query.filter_by(role='ngo', verified=True, is_active=True).all()
+        for ngo in verified_ngos:
+            db.session.add(Notification(
+                user_id=ngo.id,
+                title='New Food Available',
+                message=f'New food listing added: {listing.title} at {listing.location}',
+                notification_type='system'
+            ))
+
         db.session.commit()
         
         # Notify NGOs (optional, can be heavy)
@@ -791,7 +805,7 @@ def create_listing():
     
     now = datetime.now()  # Use local time instead of UTC
     start_time = now
-    end_time = start_time + timedelta(minutes=15)
+    end_time = start_time + timedelta(hours=2)
     default_start = start_time.strftime('%Y-%m-%dT%H:%M')
     default_end = end_time.strftime('%Y-%m-%dT%H:%M')
     
@@ -812,6 +826,7 @@ def my_listings():
     if current_user.role != 'donor':
         flash('Access denied', 'danger')
         return redirect(url_for('dashboard'))
+    cleanup_expired_listings()
     listings = FoodListing.query.filter_by(donor_id=current_user.id)\
         .order_by(FoodListing.created_at.desc()).all()
     return render_template('donor/my_listings.html', listings=listings)
@@ -858,6 +873,7 @@ def delete_listing(listing_id):
 @app.route('/listing/<int:listing_id>/view')
 @login_required
 def view_listing(listing_id):
+    cleanup_expired_listings()
     listing = FoodListing.query.get_or_404(listing_id)
     if current_user.role == 'donor' and listing.donor_id != current_user.id:
         flash('Access denied', 'danger')
@@ -871,8 +887,10 @@ def ngo_dashboard():
     if current_user.role != 'ngo':
         flash('Access denied', 'danger')
         return redirect(url_for('dashboard'))
+    cleanup_expired_listings()
+    available_cutoff = datetime.utcnow() - timedelta(hours=2)
     available_listings = FoodListing.query.filter_by(status='available')\
-        .filter(FoodListing.pickup_end > datetime.utcnow())\
+        .filter(FoodListing.created_at >= available_cutoff)\
         .order_by(FoodListing.created_at.desc()).limit(3).all()
     my_claims = Claim.query.filter_by(ngo_id=current_user.id)\
         .order_by(Claim.created_at.desc()).limit(5).all()
@@ -895,10 +913,17 @@ def available_food():
     if current_user.role != 'ngo':
         flash('Access denied', 'danger')
         return redirect(url_for('dashboard'))
+    cleanup_expired_listings()
+    available_cutoff = datetime.utcnow() - timedelta(hours=2)
     
     listings = FoodListing.query.filter_by(status='available')\
-        .filter(FoodListing.pickup_end > datetime.utcnow())\
+        .filter(FoodListing.created_at >= available_cutoff)\
         .order_by(FoodListing.created_at.desc()).all()
+    for listing in listings:
+        listing.hours_left = max(
+            0,
+            int(((listing.created_at + timedelta(hours=2)) - datetime.utcnow()).total_seconds() / 3600)
+        )
     
     # Calculate distances if NGO has coordinates
     if current_user.latitude and current_user.longitude:
@@ -924,6 +949,7 @@ def claim_food(listing_id):
     if current_user.role != 'ngo':
         flash('Access denied', 'danger')
         return redirect(url_for('dashboard'))
+    cleanup_expired_listings()
     
     # Atomic lock to prevent double claim
     listing = FoodListing.query.filter_by(id=listing_id, status='available').with_for_update().first()
@@ -993,13 +1019,14 @@ def update_claim_status(claim_id):
     new_status = data.get('status')
     notes = data.get('notes', '')
     people_served = data.get('people_served')
+    otp = (data.get('otp') or '').strip()
     
     if new_status in ['confirmed', 'picked_up', 'cancelled']:
         print(f"Updating claim status to: {new_status}")
-        claim.status = new_status
         claim.notes = notes
         
         if new_status == 'confirmed':
+            claim.status = new_status
             # Notify donor (without OTP)
             notification = Notification(
                 user_id=claim.food_listing.donor_id,
@@ -1012,9 +1039,15 @@ def update_claim_status(claim_id):
                        'Pickup Confirmed',
                        f'NGO {current_user.organization or current_user.username} confirmed they will pick up {claim.food_listing.title}.')
         elif new_status == 'picked_up':
+            if not otp:
+                return jsonify({'success': False, 'error': 'OTP is required when marking a claim as picked up'}), 400
+            if otp != claim.otp_code:
+                return jsonify({'success': False, 'error': 'Invalid OTP'}), 400
+            claim.status = new_status
             claim.pickup_time = datetime.utcnow()
             claim.food_listing.status = 'picked_up'
             claim.people_served = people_served or claim.food_listing.quantity
+            claim.otp_verified = True
             notification = Notification(
                 user_id=claim.food_listing.donor_id,
                 title='Food Picked Up!',
@@ -1022,14 +1055,68 @@ def update_claim_status(claim_id):
                 notification_type='claim_update'
             )
             db.session.add(notification)
+            donor_notification = Notification(
+                user_id=claim.food_listing.donor_id,
+                title='Pickup Completed',
+                message=f'Pickup completed for {claim.food_listing.title}.',
+                notification_type='claim_update'
+            )
+            db.session.add(donor_notification)
         elif new_status == 'cancelled':
+            claim.status = new_status
             claim.food_listing.status = 'available'
+            donor_notification = Notification(
+                user_id=claim.food_listing.donor_id,
+                title='Claim Cancelled',
+                message=f'The claim for {claim.food_listing.title} was cancelled by the NGO. Your listing is available again.',
+                notification_type='claim_update'
+            )
+            db.session.add(donor_notification)
         
         db.session.commit()
         print("Database committed successfully")
         return jsonify({'success': True})
     print(f"Invalid status: {new_status}")
     return jsonify({'success': False, 'error': 'Invalid status'}), 400
+
+
+@app.route('/api/reviews', methods=['POST'])
+@login_required
+def create_review():
+    data = request.get_json(silent=True) or {}
+    claim_id = data.get('claim_id')
+    rating = data.get('rating')
+    comment = (data.get('comment') or '').strip()
+
+    if current_user.role != 'ngo':
+        return jsonify({'success': False, 'error': 'Only NGOs can submit reviews'}), 403
+
+    if not claim_id:
+        return jsonify({'success': False, 'error': 'Claim is required'}), 400
+
+    claim = Claim.query.get_or_404(claim_id)
+    if claim.ngo_id != current_user.id:
+        return jsonify({'success': False, 'error': 'Permission denied'}), 403
+
+    try:
+        rating = int(rating)
+    except (TypeError, ValueError):
+        return jsonify({'success': False, 'error': 'Rating must be a number'}), 400
+
+    if rating < 1 or rating > 5:
+        return jsonify({'success': False, 'error': 'Rating must be between 1 and 5'}), 400
+
+    review = Review(
+        rating=rating,
+        comment=comment,
+        from_user_id=current_user.id,
+        to_user_id=claim.food_listing.donor_id,
+        claim_id=claim.id
+    )
+    db.session.add(review)
+    db.session.commit()
+
+    return jsonify({'success': True, 'message': 'Review submitted successfully'})
 
 @app.route('/claim/<int:claim_id>/reject', methods=['POST'])
 @login_required
@@ -1054,6 +1141,9 @@ def verify_otp(claim_id):
     claim = Claim.query.get_or_404(claim_id)
     if claim.food_listing.donor_id != current_user.id:
         abort(403)
+
+    if (datetime.utcnow() - claim.created_at).total_seconds() > CLAIM_OTP_EXPIRY_SECONDS:
+        return jsonify({'success': False, 'message': 'OTP expired'})
     
     data = request.get_json()
     if data.get('otp') == claim.otp_code:
@@ -1071,6 +1161,13 @@ def verify_otp(claim_id):
             notification_type='claim_update'
         )
         db.session.add(notification)
+        donor_notification = Notification(
+            user_id=claim.food_listing.donor_id,
+            title='Pickup Completed',
+            message=f'Pickup completed for {claim.food_listing.title}.',
+            notification_type='claim_update'
+        )
+        db.session.add(donor_notification)
         db.session.commit()
         
         return jsonify({'success': True, 'message': 'OTP verified successfully'})
@@ -1087,6 +1184,10 @@ def verify_otp_page(claim_id):
     
     if claim.status != 'confirmed':
         flash('This claim cannot be verified. Status must be "confirmed".', 'warning')
+        return redirect(url_for('donor_dashboard'))
+
+    if (datetime.utcnow() - claim.created_at).total_seconds() > CLAIM_OTP_EXPIRY_SECONDS:
+        flash('OTP expired. Please contact the NGO to arrange a new claim.', 'danger')
         return redirect(url_for('donor_dashboard'))
     
     if request.method == 'POST':
@@ -1106,6 +1207,13 @@ def verify_otp_page(claim_id):
                 notification_type='claim_update'
             )
             db.session.add(notification)
+            donor_notification = Notification(
+                user_id=claim.food_listing.donor_id,
+                title='Pickup Completed',
+                message=f'Pickup completed for {claim.food_listing.title}.',
+                notification_type='claim_update'
+            )
+            db.session.add(donor_notification)
             db.session.commit()
             
             flash('✅ OTP verified successfully! Pickup confirmed.', 'success')
@@ -1114,7 +1222,7 @@ def verify_otp_page(claim_id):
             flash('❌ Invalid OTP. Please try again.', 'danger')
     
     time_elapsed = (datetime.utcnow() - claim.created_at).total_seconds()
-    time_remaining = max(0, 120 - time_elapsed)
+    time_remaining = max(0, CLAIM_OTP_EXPIRY_SECONDS - time_elapsed)
     
     return render_template('donor/verify_otp.html', claim=claim, time_remaining=int(time_remaining))
 
@@ -1174,6 +1282,7 @@ def toggle_user(user_id):
 @app.route('/admin/listings')
 @admin_login_required
 def admin_listings():
+    cleanup_expired_listings()
     listings = FoodListing.query.order_by(FoodListing.created_at.desc()).all()
     return render_template('admin/listing.html', listings=listings)
 
@@ -1304,11 +1413,14 @@ def export_data():
     return response
 
 # =============== TTL AUTO-CANCELLATION ===============
+CLAIM_OTP_EXPIRY_MINUTES = 2
+CLAIM_OTP_EXPIRY_SECONDS = CLAIM_OTP_EXPIRY_MINUTES * 60
+
 @app.route('/admin/cleanup_expired_claims')
 @admin_login_required
 def cleanup_expired_claims():
-    """Auto-cancel claims older than 2 hours without OTP verification"""
-    expired_time = datetime.utcnow() - timedelta(hours=2)
+    """Auto-cancel claims older than 2 minutes without OTP verification"""
+    expired_time = datetime.utcnow() - timedelta(minutes=CLAIM_OTP_EXPIRY_MINUTES)
     
     expired_claims = Claim.query.filter(
         Claim.created_at < expired_time,
@@ -1325,7 +1437,7 @@ def cleanup_expired_claims():
         notification = Notification(
             user_id=claim.ngo_id,
             title='Claim Auto-Cancelled',
-            message=f'Your claim for {claim.food_listing.title} was auto-cancelled due to timeout (2 hours)',
+            message=f'Your claim for {claim.food_listing.title} was auto-cancelled due to timeout (2 minutes)',
             notification_type='claim_update'
         )
         db.session.add(notification)
@@ -1347,7 +1459,7 @@ def get_notifications():
             'id': n.id,
             'title': n.title,
             'message': n.message,
-            'created_at': n.created_at.isoformat()
+            'created_at': n.created_at.replace(tzinfo=timezone.utc).isoformat()
         } for n in notifications]
     })
 
@@ -1388,8 +1500,9 @@ def get_total_meals():
 @app.route('/api/listings/available')
 @login_required
 def get_available_listings():
+    available_cutoff = datetime.utcnow() - timedelta(hours=2)
     listings = FoodListing.query.filter_by(status='available')\
-        .filter(FoodListing.pickup_end > datetime.utcnow())\
+        .filter(FoodListing.created_at >= available_cutoff)\
         .order_by(FoodListing.created_at.desc()).all()
     result = []
     for listing in listings:
@@ -1467,9 +1580,11 @@ def food_safety():
 
 # =============== UTILITY ===============
 def cleanup_expired_listings():
-    # Find all expired listings regardless of current status
+    # Expire listings that have been active for more than 2 hours.
+    expiry_cutoff = datetime.utcnow() - timedelta(hours=2)
     expired_listings = FoodListing.query.filter(
-        FoodListing.pickup_end < datetime.utcnow()
+        FoodListing.created_at < expiry_cutoff,
+        FoodListing.status != 'expired'
     ).all()
     
     for listing in expired_listings:
@@ -1505,8 +1620,8 @@ def cleanup_expired_listings():
     return 0
 
 def cleanup_expired_claims():
-    """Auto-cancel claims older than 2 hours without OTP verification"""
-    expired_time = datetime.utcnow() - timedelta(hours=2)
+    """Auto-cancel claims older than 2 minutes without OTP verification"""
+    expired_time = datetime.utcnow() - timedelta(minutes=CLAIM_OTP_EXPIRY_MINUTES)
     
     expired_claims = Claim.query.filter(
         Claim.created_at < expired_time,
@@ -1523,7 +1638,7 @@ def cleanup_expired_claims():
         notification = Notification(
             user_id=claim.ngo_id,
             title='Claim Auto-Cancelled',
-            message=f'Your claim for {claim.food_listing.title} was auto-cancelled due to timeout (2 hours)',
+            message=f'Your claim for {claim.food_listing.title} was auto-cancelled due to timeout (2 minutes)',
             notification_type='claim_update'
         )
         db.session.add(notification)

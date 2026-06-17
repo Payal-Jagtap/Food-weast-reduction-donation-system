@@ -18,11 +18,9 @@ body {
 .card {
     border-radius: 10px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s;
 }
 
 .card:hover {
-    transform: translateY(-2px);
 }
 
 .food-card {
@@ -173,12 +171,9 @@ body {
     color: #fff;
     padding: 1.2rem 1rem;
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    transition: transform .15s ease, box-shadow .15s ease;
     min-height: 120px;
 }
 .stat-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.11);
 }
 .stat-card .card-title {
     font-size: 1.8rem;
@@ -241,7 +236,6 @@ body {
     border-radius: 16px !important;
     text-decoration: none !important;
     color: #1f5130 !important;
-    transition: transform .2s ease, box-shadow .2s ease, background .2s ease !important;
     box-shadow: 0 8px 20px rgba(31,81,48,0.06) !important;
     width: 100% !important;
     height: 100% !important;
@@ -275,8 +269,6 @@ body {
 }
 
 .quick-action-box:hover {
-    transform: translateY(-6px) !important;
-    box-shadow: 0 22px 48px rgba(31,81,48,0.16) !important;
     background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(224,244,226,1) 100%) !important;
     border-color: rgba(40,167,69,0.25) !important;
 }
@@ -363,7 +355,6 @@ body {
     width: 35px;
     height: 35px;
     z-index: 10;
-    transition: color 0.2s ease;
 }
 
 .password-toggle-icon:hover {

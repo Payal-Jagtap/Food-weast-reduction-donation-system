@@ -100,7 +100,8 @@
                                         'success' if listing.status == 'available' 
                                         else 'warning' if listing.status == 'claimed' 
                                         else 'info' if listing.status == 'picked_up'
-                                        else 'secondary'
+                                        else 'secondary' if listing.status == 'expired'
+                                        else 'danger'
                                     }}">
                                         {{ listing.status|title }}
                                     </span>

@@ -5,24 +5,14 @@
 {% block extra_css %}
 <style>
     .food-card {
-        transition: transform 0.2s, box-shadow 0.2s;
         border-left: 4px solid #ffc107;
     }
     
     .food-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
     }
     
     .urgent {
         border-left: 4px solid #dc3545;
-        animation: pulse 2s infinite;
-    }
-    
-    @keyframes pulse {
-        0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
-        70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
     }
     
     .badge-expiring {
@@ -126,13 +116,12 @@
 <!-- Food Grid -->
 <div class="row" id="foodGrid">
     {% for listing in listings %}
-    {% set hours_left = ((listing.pickup_end - datetime.utcnow()).total_seconds() / 3600)|round|int %}
     <div class="col-md-6 col-lg-4 mb-4 food-item" 
          data-type="{{ listing.food_type }}"
          data-quantity="{{ listing.quantity }}"
-         data-expiry="{{ hours_left }}"
+         data-expiry="{{ listing.hours_left }}"
          data-title="{{ listing.title|lower }}">
-        <div class="card h-100 food-card {% if hours_left < 2 %}urgent{% endif %}">
+        <div class="card h-100 food-card {% if listing.hours_left < 2 %}urgent{% endif %}">
             {% if listing.image %}
             <img src="{{ url_for('static', filename='uploads/' + listing.image) }}" class="card-img-top" style="height: 180px; object-fit: cover;">
             {% endif %}
@@ -146,8 +135,8 @@
                     </div>
                     <div class="text-end">
                         <span class="badge bg-info">{{ listing.quantity }} meals</span>
-                        {% if hours_left < 4 %}
-                        <span class="badge badge-expiring mt-1">Expiring in {{ hours_left }}h</span>
+                        {% if listing.hours_left < 4 %}
+                        <span class="badge badge-expiring mt-1">Expiring in {{ listing.hours_left }}h</span>
                         {% endif %}
                     </div>
                 </div>
