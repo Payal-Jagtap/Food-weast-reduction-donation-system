@@ -6,6 +6,7 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import inspect, text
+from sqlalchemy.orm import aliased
 from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta, timezone
 from functools import wraps
@@ -715,13 +716,44 @@ def donor_dashboard():
     total_meals_result = db.session.query(db.func.sum(FoodListing.quantity))\
         .filter(FoodListing.donor_id == current_user.id, FoodListing.status == 'picked_up').first()
     total_meals = total_meals_result[0] or 0 if total_meals_result else 0
+    review_count = Review.query.filter_by(to_user_id=current_user.id).count()
+    average_rating = db.session.query(db.func.avg(Review.rating))\
+        .filter(Review.to_user_id == current_user.id).scalar() or 0
+    reviews = Review.query.filter_by(to_user_id=current_user.id)\
+        .order_by(Review.created_at.desc()).limit(5).all()
+    review_rows = db.session.query(
+        FoodListing.id.label('listing_id'),
+        Review.rating,
+        Review.comment,
+        Review.created_at,
+        User.username.label('author_username'),
+        NGO.organization.label('author_organization')
+    ).join(Claim, Claim.id == Review.claim_id)\
+     .join(FoodListing, FoodListing.id == Claim.food_listing_id)\
+     .outerjoin(User, User.id == Review.from_user_id)\
+     .outerjoin(NGO, NGO.user_id == User.id)\
+     .filter(FoodListing.donor_id == current_user.id)\
+     .order_by(Review.created_at.desc()).all()
+
+    listing_reviews = {}
+    for row in review_rows:
+        listing_reviews.setdefault(row.listing_id, []).append({
+            'rating': row.rating,
+            'comment': row.comment,
+            'created_at': row.created_at,
+            'author': row.author_organization or row.author_username or 'Anonymous'
+        })
     return render_template('donor/donor_dashboard.html',
                          listings=listings,
                          claims=claims,
                          total_listings=total_listings,
                          available_listings=available_listings,
                          claimed_listings=claimed_listings,
-                         total_meals=total_meals)
+                         total_meals=total_meals,
+                         review_count=review_count,
+                         average_rating=average_rating,
+                         reviews=reviews,
+                         listing_reviews=listing_reviews)
 
 @app.route('/create_listing', methods=['GET', 'POST'])
 @login_required
@@ -1235,6 +1267,43 @@ def admin_dashboard():
     total_listings = FoodListing.query.count()
     total_claims = Claim.query.count()
     pending_ngos = User.query.filter_by(role='ngo', verified=False).count()
+    review_count = Review.query.count()
+    average_rating = db.session.query(db.func.avg(Review.rating)).scalar() or 0
+
+    from_user = aliased(User)
+    to_user = aliased(User)
+    recent_review_rows = (
+        db.session.query(
+            Review.id,
+            Review.rating,
+            Review.comment,
+            Review.created_at,
+            Review.claim_id,
+            from_user.username.label('from_username'),
+            to_user.username.label('to_username'),
+            FoodListing.title.label('listing_title')
+        )
+        .outerjoin(from_user, from_user.id == Review.from_user_id)
+        .outerjoin(to_user, to_user.id == Review.to_user_id)
+        .outerjoin(Claim, Claim.id == Review.claim_id)
+        .outerjoin(FoodListing, FoodListing.id == Claim.food_listing_id)
+        .order_by(Review.created_at.desc())
+        .limit(5)
+        .all()
+    )
+
+    recent_reviews = []
+    for row in recent_review_rows:
+        recent_reviews.append({
+            'id': row.id,
+            'rating': row.rating,
+            'comment': row.comment,
+            'created_at': row.created_at,
+            'claim_id': row.claim_id,
+            'listing_title': row.listing_title,
+            'from_name': row.from_username or 'Anonymous',
+            'to_name': row.to_username or 'Unknown user'
+        })
     
     # Get monthly donation data for the chart
     from sqlalchemy import extract
@@ -1253,6 +1322,9 @@ def admin_dashboard():
                            total_listings=total_listings,
                            total_claims=total_claims,
                            pending_ngos=pending_ngos,
+                           review_count=review_count,
+                           average_rating=average_rating,
+                           recent_reviews=recent_reviews,
                            monthly_donations=monthly_donations)
 
 @app.route('/admin/users')

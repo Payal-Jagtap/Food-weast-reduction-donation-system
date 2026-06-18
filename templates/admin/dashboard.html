@@ -65,6 +65,76 @@
     </div>
 </div>
 
+<!-- Reviews Summary -->
+<div class="row mb-5">
+    <div class="col-lg-4 mb-3">
+        <div class="card border-0 h-100" style="background: linear-gradient(135deg, #fff8e6 0%, #fff 100%); box-shadow: 0 8px 24px rgba(0,0,0,0.06);">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="card-title mb-0" style="font-size: 1.15rem; font-weight: 800; color: #000;">Reviews</h5>
+                    <i class="bi bi-star-fill" style="color: #f5b301; font-size: 1.4rem;"></i>
+                </div>
+                <h2 class="mb-1" style="font-weight: 800; color: #111;">{{ review_count }}</h2>
+                <p class="text-muted mb-2">Total feedback from NGOs</p>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-warning text-dark">{{ '%.1f'|format(average_rating) if review_count else '0.0' }}/5</span>
+                    <small class="text-muted">Average rating</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8 mb-3">
+        <div class="card border-0 h-100" style="background: #f8f9fa; box-shadow: 0 8px 24px rgba(0,0,0,0.06);">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="card-title mb-0" style="font-size: 1.5rem; font-weight: 800; color: #000;">
+                        <i class="bi bi-chat-left-text me-2" style="color: #28a745;"></i>Recent Reviews
+                    </h5>
+                    <a href="{{ url_for('admin_reports') }}" class="btn btn-sm btn-outline-secondary">View Reports</a>
+                </div>
+                {% if recent_reviews %}
+                <div class="list-group list-group-flush">
+                    {% for review in recent_reviews %}
+                    <div class="list-group-item bg-transparent px-0 py-3 border-0 border-bottom">
+                        <div class="d-flex justify-content-between align-items-start gap-3">
+                            <div>
+                                <div class="fw-semibold text-dark">{{ review.from_name }}</div>
+                                <small class="text-muted">
+                                    {% if review.listing_title %}
+                                        {{ review.listing_title }}
+                                    {% else %}
+                                        General feedback
+                                    {% endif %}
+                                    · {{ review.created_at.strftime('%b %d, %I:%M %p') }}
+                                </small>
+                                <p class="mb-0 mt-2 text-muted">{{ review.comment or 'No comment provided' }}</p>
+                            </div>
+                            <div class="text-end flex-shrink-0">
+                                <span class="badge bg-warning text-dark">{{ review.rating }}/5</span>
+                                <div class="mt-2 text-warning">
+                                    {% for i in range(review.rating) %}
+                                        <i class="bi bi-star-fill"></i>
+                                    {% endfor %}
+                                    {% for i in range(5 - review.rating) %}
+                                        <i class="bi bi-star"></i>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-chat-square-dots display-6 d-block mb-2"></i>
+                    No reviews yet.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Quick Actions and Chart -->
 <div class="row mt-5">
     <div class="col-12">
