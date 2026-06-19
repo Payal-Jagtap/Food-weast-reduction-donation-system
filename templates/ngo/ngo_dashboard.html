@@ -101,63 +101,9 @@
                                             <i class="bi bi-cart-check"></i> Claim Food
                                         </button>
                                     </form>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-toggle="modal" data-bs-target="#detailsModal{{ listing.id }}">
+                                    <a href="{{ url_for('available_food') }}" class="btn btn-sm btn-outline-secondary w-100">
                                         <i class="bi bi-info-circle"></i> Details
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Details Modal -->
-                    <div class="modal fade" id="detailsModal{{ listing.id }}" tabindex="-1">
-                        <div class="modal-dialog modal-lg">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title">{{ listing.title }}</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <div class="row g-3">
-                                        <div class="col-md-6">
-                                            {% if listing.image %}
-                                            <img src="{{ url_for('static', filename='uploads/' + listing.image) }}" class="img-fluid rounded mb-3" style="width: 100%; max-height: 260px; object-fit: cover;">
-                                            {% endif %}
-                                            <h6>Food Details</h6>
-                                            <p class="mb-1"><strong>Type:</strong> {{ listing.food_type|title if listing.food_type else 'Not specified' }}</p>
-                                            <p class="mb-1"><strong>Quantity:</strong> {{ listing.quantity }} meals</p>
-                                            <p class="mb-1"><strong>Pickup By:</strong> {{ listing.pickup_end.strftime('%I:%M %p') }}</p>
-                                            <p class="mb-0"><strong>Location:</strong> {{ listing.location }}</p>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <h6>Pickup Information</h6>
-                                            <p class="mb-1"><strong>Donor:</strong> {{ listing.donor.organization or listing.donor.username }}</p>
-                                            <p class="mb-1"><strong>Address:</strong> {{ listing.pickup_address or listing.location }}</p>
-                                            <p class="mb-1"><strong>Pickup Window:</strong><br>{{ listing.pickup_start.strftime('%I:%M %p') }} - {{ listing.pickup_end.strftime('%I:%M %p') }}</p>
-                                            {% if listing.latitude and listing.longitude %}
-                                            <div class="mb-3">
-                                                <h6>Location Map</h6>
-                                                <div id="map{{ listing.id }}" style="height: 220px; width: 100%; border-radius: 8px;" data-lat="{{ listing.latitude }}" data-lon="{{ listing.longitude }}"></div>
-                                                <small class="text-muted">
-                                                    <a href="https://www.google.com/maps/search/?api=1&query={{ listing.latitude }},{{ listing.longitude }}" target="_blank" class="text-decoration-none">
-                                                        <i class="bi bi-map"></i> Get Directions
-                                                    </a>
-                                                </small>
-                                            </div>
-                                            {% endif %}
-                                            {% if listing.description %}
-                                            <hr>
-                                            <h6>Description</h6>
-                                            <p class="mb-0">{{ listing.description }}</p>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                    <form method="POST" action="{{ url_for('claim_food', listing_id=listing.id) }}">
-                                        <button type="submit" class="btn btn-warning">Claim Food</button>
-                                    </form>
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -217,10 +163,9 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <a class="btn btn-sm btn-outline-primary"
-                                       href="mailto:{{ claim.food_listing.donor.email }}?subject={{ ('FoodShare claim inquiry for ' ~ claim.food_listing.title)|urlencode }}&body={{ ('Hello ' ~ (claim.food_listing.donor.organization or claim.food_listing.donor.username) ~ ',%0D%0A%0D%0AI would like to coordinate pickup for the food item ' ~ claim.food_listing.title ~ '.%0D%0A%0D%0AThanks,')|urlencode }}">
-                                        <i class="bi bi-envelope"></i> Contact
-                                    </a>
+                                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#contactModal{{ claim.id }}">
+                                        <i class="bi bi-telephone"></i> Contact
+                                    </button>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -238,47 +183,4 @@
         </div>
     </div>
 </div>
-
-<script>
-    function initializeDashboardMap(listingId, lat, lon) {
-        const mapId = 'map' + listingId;
-        const mapElement = document.getElementById(mapId);
-
-        if (mapElement && !mapElement.hasAttribute('data-map-initialized')) {
-            const map = L.map(mapId).setView([lat, lon], 15);
-
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(map);
-
-            L.marker([lat, lon]).addTo(map)
-                .bindPopup('Pickup Location')
-                .openPopup();
-
-            mapElement.setAttribute('data-map-initialized', 'true');
-        }
-    }
-
-    document.addEventListener('shown.bs.modal', function (event) {
-        const modalId = event.target.id;
-
-        if (!modalId || !modalId.startsWith('detailsModal')) {
-            return;
-        }
-
-        const listingId = modalId.replace('detailsModal', '');
-        const mapElement = document.getElementById('map' + listingId);
-
-        if (mapElement) {
-            const lat = parseFloat(mapElement.getAttribute('data-lat'));
-            const lon = parseFloat(mapElement.getAttribute('data-lon'));
-
-            if (!isNaN(lat) && !isNaN(lon)) {
-                setTimeout(() => {
-                    initializeDashboardMap(listingId, lat, lon);
-                }, 100);
-            }
-        }
-    });
-</script>
 {% endblock %}

@@ -33,8 +33,7 @@
                                 'success' if listing.status == 'available' 
                                 else 'warning' if listing.status == 'claimed' 
                                 else 'info' if listing.status == 'picked_up'
-                                else 'secondary' if listing.status == 'expired'
-                                else 'danger'
+                                else 'secondary'
                             }}">{{ listing.status }}</span>
                         </td>
                         <td>{{ listing.created_at.strftime('%Y-%m-%d') }}</td>

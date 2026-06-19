@@ -181,11 +181,7 @@
                         let notificationsHTML = '<li><h6 class="dropdown-header">Notifications</h6></li>';
                         
                         data.notifications.forEach(notification => {
-                            const time = new Date(notification.created_at).toLocaleTimeString([], {
-                                hour: 'numeric',
-                                minute: '2-digit',
-                                hour12: true
-                            });
+                            const time = new Date(notification.created_at).toLocaleTimeString();
                             notificationsHTML += `
                                 <li>
                                     <a class="dropdown-item" href="#" onclick="markAsRead(${notification.id})">

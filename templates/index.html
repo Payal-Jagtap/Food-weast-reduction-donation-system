@@ -4,7 +4,7 @@
 <!-- Enhanced Hero Section -->
 <div class="hero-section text-center py-5 mb-5" style="background: linear-gradient(rgba(40, 167, 69, 0.35), rgba(32, 201, 151, 0.35)), url('{{ url_for('static', filename='uploads/food share image.jpeg') }}'); background-size: cover; background-position: center; border-radius: 15px; overflow: hidden; min-height: 500px; display: flex; align-items: center; justify-content: center;">
     <div class="py-5 px-4" style="z-index: 10;">
-        <div>
+        <div style="animation: slideDown 0.8s ease-out;">
             <h2 class="h3 text-white mb-2 fw-semibold" style="text-shadow: 2px 2px 8px rgba(0,0,0,0.7);">Share Food Share Hope</h2>
             <h1 class="display-3 text-white mb-3 fw-bold" style="text-shadow: 3px 3px 12px rgba(0,0,0,0.8);">Reduce Food Waste, Feed People</h1>
             <p class="lead text-white mb-4" style="font-size: 1.3rem; text-shadow: 2px 2px 8px rgba(0,0,0,0.8);">
@@ -93,5 +93,29 @@
 </div>
 
 <style>
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 40px rgba(0,0,0,0.15) !important;
+    }
+    
+    .btn:hover {
+        transform: scale(1.05);
+        transition: all 0.3s ease;
+    }
 </style>
 {% endblock %}
